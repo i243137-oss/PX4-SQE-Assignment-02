@@ -1,0 +1,22 @@
+PX4 baseline
+Tag: v1.17.0
+Commit: d6f12ad1c4f70ad3230afd7d86e971421e02fef4
+Checkout: /home/abdullah/Downloads/SQE/A2/PX4-Autopilot
+OS: Fedora Linux 44
+Kernel: Linux 7.1.13-200.fc44.x86_64
+Architecture: x86_64
+Python: 3.14.7
+CMake: 4.3.0
+lcov: 2.0-1
+Compiler: native GCC/G++ 16.2.1 at /usr/bin/gcc and /usr/bin/g++
+PX4 Python path: /home/abdullah/Downloads/SQE/A2/.venv/lib/python3.14/site-packages
+
+Commands:
+git rev-parse HEAD
+git describe --tags --exact-match
+git submodule status --recursive
+PYTHONPATH=/home/abdullah/Downloads/SQE/A2/.venv/lib/python3.14/site-packages CC=/usr/bin/gcc CXX=/usr/bin/g++ CMAKE_ARGS='-DCMAKE_CXX_FLAGS=-Wno-error=maybe-uninitialized' make tests TESTFILTER=failsafe_test
+lcov --extract coverage/lcov.cleaned.info '*/src/modules/commander/failsafe/framework.cpp' '*/src/modules/commander/failsafe/framework.h' -o coverage/failsafe_scope.info
+genhtml coverage/failsafe_scope.info --output-directory coverage/html
+
+Baseline result: 9/9 existing FailsafeTest tests passed. Scope coverage: 81.0% lines, 93.8% functions, no branch data found. See baseline_run.log and baseline_coverage/.

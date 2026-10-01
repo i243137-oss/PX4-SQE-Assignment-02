@@ -1,0 +1,3 @@
+# Baseline coverage status
+
+The fixed v1.17.0 baseline was built with native GCC/G++ and the existing upstream failsafe test suite. The focused run passed 9/9 tests. `failsafe_scope.info` and `html/` contain the scope-filtered report for `framework.cpp` and `framework.h`: 81.0% lines (281/347), 93.8% functions (30/32), and no branch data emitted by lcov in this configuration. This is baseline evidence only; Student 2's tests are not included.

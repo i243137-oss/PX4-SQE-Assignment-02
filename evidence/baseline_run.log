@@ -1,0 +1,21 @@
+Baseline environment:
+CC=/usr/bin/gcc
+CXX=/usr/bin/g++
+PYTHONPATH=/home/abdullah/Downloads/SQE/A2/.venv/lib/python3.14/site-packages
+CMAKE_ARGS=-DCMAKE_CXX_FLAGS=-Wno-error=maybe-uninitialized
+
+Baseline command:
+make tests TESTFILTER=failsafe_test
+
+The first attempts exposed and were repaired in order: missing kconfiglib, missing empy, missing pyros-genmsg, Empy 4.x incompatibility, Zig compiler wrappers, and GCC 16 maybe-uninitialized warnings treated as errors. The successful build used Empy 3.3.4, native GCC/G++, PYTHONPATH, and the CMake warning override above. No production code was modified.
+
+Focused executable result:
+build/px4_sitl_test/functional-failsafe_test --gtest_color=no
+Exit code: 0
+9 tests from FailsafeTest ran; 9 passed, 0 failed.
+The executable printed PX4 work-queue initialization errors before the test suite, but all nine failsafe tests completed successfully.
+
+Coverage command and result:
+Coverage build completed and lcov was captured from build/px4_sitl_test. Scope-filtered artifacts are in baseline_coverage/failsafe_scope.info and baseline_coverage/html/.
+Selected framework scope summary: lines 81.0% (281/347), functions 93.8% (30/32), branches: no data found.
+The report is baseline evidence for the upstream failsafe test only; Student 2's tests have not been implemented.

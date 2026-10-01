@@ -1,0 +1,16 @@
+# Ignore everything by default
+/*
+
+# Whitelist repo files and required deliverable folders
+!.gitignore
+!/README.md
+!/report/
+!/report/**
+!/analysis/
+!/analysis/**
+!/design/
+!/design/**
+!/evidence/
+!/evidence/**
+!/deliverables/
+!/deliverables/**

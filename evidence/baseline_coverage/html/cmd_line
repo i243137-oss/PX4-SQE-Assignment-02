@@ -1,0 +1,1 @@
+genhtml coverage/failsafe_scope.info --output-directory coverage/html
