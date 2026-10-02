@@ -1,0 +1,1267 @@
+diff --git a/src/modules/commander/failsafe/CMakeLists.txt b/src/modules/commander/failsafe/CMakeLists.txt
+index 0d7b3bd366..df4416641a 100644
+--- a/src/modules/commander/failsafe/CMakeLists.txt
++++ b/src/modules/commander/failsafe/CMakeLists.txt
+@@ -80,3 +80,7 @@ px4_add_library(failsafe
+ px4_add_functional_gtest(SRC failsafe_test.cpp
+ 	LINKLIBS failsafe mode_util
+ )
++
++px4_add_functional_gtest(SRC failsafe_student_test.cpp
++	LINKLIBS failsafe mode_util
++)
+diff --git a/src/modules/commander/failsafe/failsafe_student_test.cpp b/src/modules/commander/failsafe/failsafe_student_test.cpp
+new file mode 100644
+index 0000000000..a41382e44b
+--- /dev/null
++++ b/src/modules/commander/failsafe/failsafe_student_test.cpp
+@@ -0,0 +1,1249 @@
++/****************************************************************************
++ *
++ *   Copyright (c) 2026 PX4 Development Team. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ * 3. Neither the name PX4 nor the names of its contributors may be
++ *    used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ****************************************************************************/
++
++/**
++ * @file failsafe_student_test.cpp
++ *
++ * Student-authored structural test suite for FailsafeBase (v1.17.0).
++ * Implemented by Student 2 from the structural test basis and MC/DC analysis
++ * developed in Parts 1 and 2 (TC-FS-01 through TC-FS-27).
++ */
++
++#include <gtest/gtest.h>
++#include <functional>
++
++#include "framework.h"
++#include <uORB/topics/vehicle_status.h>
++#include "../ModeUtil/mode_requirements.hpp"
++
++using namespace time_literals;
++
++class FailsafeStudentTester : public FailsafeBase
++{
++public:
++	FailsafeStudentTester(ModuleParams *parent = nullptr) : FailsafeBase(parent) {}
++
++	using StateCheckFn = std::function<void(FailsafeStudentTester *, const hrt_abstime &, const State &, const failsafe_flags_s &)>;
++	using FallbackCheckFn = std::function<Action(const failsafe_flags_s &, uint8_t)>;
++
++	void setStateCheckCallback(StateCheckFn fn) { _state_check_fn = fn; }
++	void setFallbackCheckCallback(FallbackCheckFn fn) { _fallback_check_fn = fn; }
++
++	// Test seam helpers to invoke protected members
++	bool callCheckFailsafe(int caller_id, bool last_state_failure, bool cur_state_failure, const ActionOptions &options)
++	{
++		return checkFailsafe(caller_id, last_state_failure, cur_state_failure, options);
++	}
++
++	int callGenCallerId() { return genCallerId(); }
++
++	static bool callModeCanRun(const failsafe_flags_s &status_flags, uint8_t mode)
++	{
++		return modeCanRun(status_flags, mode);
++	}
++
++	void callClearDelayIfNeeded(const State &state, const failsafe_flags_s &status_flags)
++	{
++		clearDelayIfNeeded(state, status_flags);
++	}
++
++	void callGetSelectedAction(const State &state, const failsafe_flags_s &status_flags,
++				   bool user_intended_mode_updated, bool rc_sticks_takeover_request,
++				   SelectedActionState &returned_state) const
++	{
++		getSelectedAction(state, status_flags, user_intended_mode_updated, rc_sticks_takeover_request, returned_state);
++	}
++
++	void callRemoveAction(ActionOptions &action) const
++	{
++		removeAction(action);
++	}
++
++	void callRemoveNonActivatedActions()
++	{
++		removeNonActivatedActions();
++	}
++
++	void callUpdateStartDelay(const hrt_abstime &dt, bool delay_active)
++	{
++		updateStartDelay(dt, delay_active);
++	}
++
++	void callUpdateDelay(const hrt_abstime &elapsed_us)
++	{
++		updateDelay(elapsed_us);
++	}
++
++	ActionOptions &getActionSlot(int idx) { return _actions[idx]; }
++	hrt_abstime getCurrentStartDelay() const { return _current_start_delay; }
++	hrt_abstime getCurrentDelay() const { return _current_delay; }
++	void setCurrentDelay(hrt_abstime delay) { _current_delay = delay; }
++	void setSelectedActionDirect(Action act) { _selected_action = act; }
++	void setUserTakeoverActiveDirect(bool active) { _user_takeover_active = active; }
++
++protected:
++	void checkStateAndMode(const hrt_abstime &time_us, const State &state,
++			       const failsafe_flags_s &status_flags) override
++	{
++		if (_state_check_fn) {
++			_state_check_fn(this, time_us, state, status_flags);
++		}
++	}
++
++	Action checkModeFallback(const failsafe_flags_s &status_flags, uint8_t user_intended_mode) const override
++	{
++		if (_fallback_check_fn) {
++			return _fallback_check_fn(status_flags, user_intended_mode);
++		}
++
++		return Action::None;
++	}
++
++private:
++	StateCheckFn _state_check_fn{nullptr};
++	FallbackCheckFn _fallback_check_fn{nullptr};
++};
++
++class FailsafeStudentTest : public ::testing::Test
++{
++public:
++	void SetUp() override
++	{
++		param_control_autosave(false);
++		param_t param = param_handle(px4::params::COM_FAIL_ACT_T);
++
++		float hold_delay = 5.f;
++		param_set(param, &hold_delay);
++
++		// Default initial state
++		_default_state.armed = true;
++		_default_state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_POSCTL;
++		_default_state.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
++		_default_state.vtol_in_transition_mode = false;
++		_default_state.mission_finished = false;
++	}
++
++protected:
++	FailsafeBase::State _default_state{};
++};
++
++// ============================================================================
++// TC-FS-01: Public mapping - actionStr covering all enum values and invalid
++// Obligation: OBL-FS-001
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_01_ActionStrMappings)
++{
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::None), "None");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::Warn), "Warn");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::FallbackPosCtrl), "Fallback to PosCtrl");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::FallbackAltCtrl), "Fallback to AltCtrl");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::FallbackStab), "Fallback to Stabilized");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::Hold), "Hold");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::RTL), "RTL");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::Land), "Land");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::Descend), "Descend");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::Disarm), "Disarm");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::Terminate), "Terminate");
++	EXPECT_STREQ(FailsafeBase::actionStr(FailsafeBase::Action::Count), "(invalid)");
++	EXPECT_STREQ(FailsafeBase::actionStr(static_cast<FailsafeBase::Action>(255)), "(invalid)");
++	EXPECT_STREQ(FailsafeBase::actionStr(static_cast<FailsafeBase::Action>(42)), "(invalid)");
++}
++
++// ============================================================================
++// TC-FS-02: Public mapping - modeFromAction for mode and non-mode actions
++// Obligation: OBL-FS-002
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_02_ModeFromActionMappings)
++{
++	const uint8_t sentinel_mode = vehicle_status_s::NAVIGATION_STATE_MANUAL;
++
++	// Mode-producing actions
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::FallbackPosCtrl, sentinel_mode),
++		  vehicle_status_s::NAVIGATION_STATE_POSCTL);
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::FallbackAltCtrl, sentinel_mode),
++		  vehicle_status_s::NAVIGATION_STATE_ALTCTL);
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::FallbackStab, sentinel_mode),
++		  vehicle_status_s::NAVIGATION_STATE_STAB);
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::Hold, sentinel_mode),
++		  vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER);
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::RTL, sentinel_mode),
++		  vehicle_status_s::NAVIGATION_STATE_AUTO_RTL);
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::Land, sentinel_mode),
++		  vehicle_status_s::NAVIGATION_STATE_AUTO_LAND);
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::Descend, sentinel_mode),
++		  vehicle_status_s::NAVIGATION_STATE_DESCEND);
++
++	// Non-mode producing actions must preserve supplied mode
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::None, sentinel_mode), sentinel_mode);
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::Warn, sentinel_mode), sentinel_mode);
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::Disarm, sentinel_mode), sentinel_mode);
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::Terminate, sentinel_mode), sentinel_mode);
++	EXPECT_EQ(FailsafeBase::modeFromAction(FailsafeBase::Action::Count, sentinel_mode), sentinel_mode);
++	EXPECT_EQ(FailsafeBase::modeFromAction(static_cast<FailsafeBase::Action>(99), sentinel_mode), sentinel_mode);
++}
++
++// ============================================================================
++// TC-FS-03: Update timing initialization and state commit
++// Obligation: OBL-FS-003, OBL-FS-008
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_03_UpdateTimingInitializationAndCommit)
++{
++	FailsafeStudentTester failsafe;
++	failsafe_flags_s flags{};
++
++	hrt_abstime time1 = 5_s;
++	uint8_t mode1 = failsafe.update(time1, _default_state, false, false, flags);
++	EXPECT_EQ(mode1, _default_state.user_intended_mode);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++
++	// Second update: _last_update != 0 branch
++	hrt_abstime time2 = 5_s + 10_ms;
++	uint8_t mode2 = failsafe.update(time2, _default_state, false, false, flags);
++	EXPECT_EQ(mode2, _default_state.user_intended_mode);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++}
++
++// ============================================================================
++// TC-FS-04: Arming and disarming transitions clear OnDisarm/OnModeChangeOrDisarm
++// Obligation: OBL-FS-004
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_04_ArmingDisarmingTransitionCleanup)
++{
++	FailsafeStudentTester failsafe;
++	failsafe_flags_s flags{};
++	const int caller_id = 101;
++	bool active_failure = true;
++
++	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++		FailsafeBase::ActionOptions opts(FailsafeBase::Action::RTL);
++		opts.clearOn(FailsafeBase::ClearCondition::OnModeChangeOrDisarm);
++		opts.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		fs->callCheckFailsafe(caller_id, false, active_failure, opts);
++	});
++
++	hrt_abstime time = 1_s;
++	_default_state.armed = true;
++	failsafe.update(time, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::RTL);
++
++	// Condition clears, but action is OnModeChangeOrDisarm so it remains retained
++	active_failure = false;
++	time += 10_ms;
++	failsafe.update(time, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::RTL);
++
++	// Disarm transition (armed: true -> false)
++	_default_state.armed = false;
++	time += 10_ms;
++	failsafe.update(time, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++	EXPECT_FALSE(failsafe.userTakeoverActive());
++
++	// Arming transition (armed: false -> true)
++	time += 10_ms;
++	_default_state.armed = true;
++	failsafe.update(time, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++}
++
++// ============================================================================
++// TC-FS-05: Mode-change clears OnModeChangeOrDisarm actions
++// Obligation: OBL-FS-005
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_05_ModeChangeCleanup)
++{
++	FailsafeStudentTester failsafe;
++	failsafe_flags_s flags{};
++	const int caller_id = 102;
++	bool active_failure = true;
++
++	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++		FailsafeBase::ActionOptions opts(FailsafeBase::Action::RTL);
++		opts.clearOn(FailsafeBase::ClearCondition::OnModeChangeOrDisarm);
++		fs->callCheckFailsafe(caller_id, false, active_failure, opts);
++	});
++
++	hrt_abstime time = 1_s;
++	_default_state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_POSCTL;
++	failsafe.update(time, _default_state, false, false, flags);
++
++	// Condition cleared, slot retained waiting for mode switch
++	active_failure = false;
++	time += 10_ms;
++	failsafe.update(time, _default_state, false, false, flags);
++
++	// Mode changed without setting user_intended_mode_updated explicitly
++	_default_state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_ALTCTL;
++	time += 10_ms;
++	failsafe.update(time, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++
++	// Re-trigger and test explicit user_intended_mode_updated=true with same mode
++	active_failure = true;
++	time += 10_ms;
++	failsafe.update(time, _default_state, false, false, flags);
++	active_failure = false;
++	time += 10_ms;
++	failsafe.update(time, _default_state, false, false, flags);
++
++	time += 10_ms;
++	failsafe.update(time, _default_state, true, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++}
++
++// ============================================================================
++// TC-FS-06: Finite and infinite deferral timeout boundaries
++// Obligation: OBL-FS-006, OBL-FS-007
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_06_FiniteAndInfiniteDeferralTiming)
++{
++	FailsafeStudentTester failsafe;
++	failsafe_flags_s flags{};
++	const int caller_id = 103;
++
++	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++		FailsafeBase::ActionOptions opts(FailsafeBase::Action::Descend);
++		opts.clearOn(FailsafeBase::ClearCondition::WhenConditionClears);
++		fs->callCheckFailsafe(caller_id, false, true, opts);
++	});
++
++	EXPECT_TRUE(failsafe.deferFailsafes(true, 2)); // 2 second timeout
++	EXPECT_TRUE(failsafe.getDeferFailsafes());
++
++	hrt_abstime start_t = 10_s;
++	failsafe.update(start_t, _default_state, false, false, flags);
++	EXPECT_TRUE(failsafe.failsafeDeferred());
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++
++	// Exact timeout boundary (start_t + 2s): not strictly past, deferral still active
++	hrt_abstime exact_t = start_t + 2_s;
++	failsafe.update(exact_t, _default_state, false, false, flags);
++	EXPECT_TRUE(failsafe.getDeferFailsafes());
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++
++	// Strictly past timeout boundary (start_t + 2s + 1us): deferral clears
++	hrt_abstime past_t = start_t + 2_s + 1_us;
++	failsafe.update(past_t, _default_state, false, false, flags);
++	EXPECT_FALSE(failsafe.getDeferFailsafes());
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Descend);
++
++	// Infinite timeout (-1): never clears automatically
++	EXPECT_TRUE(failsafe.deferFailsafes(true, -1));
++	hrt_abstime inf_t = 30_s;
++	failsafe.update(inf_t, _default_state, false, false, flags);
++	EXPECT_TRUE(failsafe.failsafeDeferred());
++	failsafe.update(inf_t + 100_s, _default_state, false, false, flags);
++	EXPECT_TRUE(failsafe.getDeferFailsafes());
++}
++
++// ============================================================================
++// TC-FS-07: User notification callback and notification_required reset
++// Obligation: OBL-FS-008, OBL-FS-012
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_07_NotificationCallbackAndReset)
++{
++	FailsafeStudentTester failsafe;
++	failsafe_flags_s flags{};
++	const int caller_id = 104;
++
++	static int notify_count = 0;
++	notify_count = 0;
++	failsafe.setOnNotifyUserCallback([](void *) { notify_count++; }, nullptr);
++
++	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++		FailsafeBase::ActionOptions opts(FailsafeBase::Action::Warn);
++		opts.clearOn(FailsafeBase::ClearCondition::WhenConditionClears);
++		fs->callCheckFailsafe(caller_id, false, true, opts);
++	});
++
++	hrt_abstime time = 1_s;
++	failsafe.update(time, _default_state, false, false, flags);
++	EXPECT_EQ(notify_count, 1);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Warn);
++
++	// Next update with same active warning: notification_required was reset, no new callback
++	time += 10_ms;
++	failsafe.update(time, _default_state, false, false, flags);
++	EXPECT_EQ(notify_count, 1);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Warn);
++}
++
++// ============================================================================
++// TC-FS-08: Delay reduction, zero threshold, regrowth, and cap
++// Obligation: OBL-FS-009
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_08_StartDelayReductionRegrowthCap)
++{
++	FailsafeStudentTester failsafe;
++	// COM_FAIL_ACT_T is 5.0s, so configured delay is 5_s
++	EXPECT_EQ(failsafe.getCurrentStartDelay(), 5_s);
++
++	// Reduce delay with dt < current (dt = 1s)
++	failsafe.callUpdateStartDelay(1_s, true);
++	EXPECT_EQ(failsafe.getCurrentStartDelay(), 4_s);
++
++	// Reduce to zero with dt >= current (dt = 4s)
++	failsafe.callUpdateStartDelay(4_s, true);
++	EXPECT_EQ(failsafe.getCurrentStartDelay(), 0_s);
++
++	// Regrowth with delay_active = false: increases by dt / 4
++	failsafe.callUpdateStartDelay(4_s, false);
++	EXPECT_EQ(failsafe.getCurrentStartDelay(), 1_s);
++
++	// Cap at configured parameter (5_s)
++	failsafe.callUpdateStartDelay(40_s, false);
++	EXPECT_EQ(failsafe.getCurrentStartDelay(), 5_s);
++}
++
++// ============================================================================
++// TC-FS-09: updateDelay boundary subtraction and clamping
++// Obligation: OBL-FS-010
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_09_UpdateDelayBoundaries)
++{
++	FailsafeStudentTester failsafe;
++	failsafe.setCurrentDelay(5_s);
++
++	// Elapsed less than current delay
++	failsafe.callUpdateDelay(2_s);
++	EXPECT_EQ(failsafe.getCurrentDelay(), 3_s);
++
++	// Elapsed greater than current delay clamps to zero
++	failsafe.callUpdateDelay(4_s);
++	EXPECT_EQ(failsafe.getCurrentDelay(), 0_s);
++}
++
++// ============================================================================
++// TC-FS-10: checkFailsafe existing caller update and slot retention
++// Obligation: OBL-FS-011
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_10_ExistingCallerUpdate)
++{
++	FailsafeStudentTester failsafe;
++	const int caller_id = 201;
++
++	FailsafeBase::ActionOptions opt1(FailsafeBase::Action::Hold);
++	bool r1 = failsafe.callCheckFailsafe(caller_id, false, true, opt1);
++	EXPECT_TRUE(r1);
++	EXPECT_EQ(failsafe.getActionSlot(0).id, caller_id);
++	EXPECT_EQ(failsafe.getActionSlot(0).action, FailsafeBase::Action::Hold);
++	EXPECT_FALSE(failsafe.getActionSlot(1).valid());
++
++	// Update existing caller with different action
++	FailsafeBase::ActionOptions opt2(FailsafeBase::Action::RTL);
++	bool r2 = failsafe.callCheckFailsafe(caller_id, true, true, opt2);
++	EXPECT_TRUE(r2);
++	EXPECT_EQ(failsafe.getActionSlot(0).id, caller_id);
++	EXPECT_EQ(failsafe.getActionSlot(0).action, FailsafeBase::Action::RTL);
++	EXPECT_FALSE(failsafe.getActionSlot(1).valid()); // No duplicate allocated
++}
++
++// ============================================================================
++// TC-FS-11: Auto takeover parameter thresholds and Warn delay suppression
++// Obligation: OBL-FS-012
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_11_AutoTakeoverThresholds)
++{
++	// COM_FAIL_ACT_T > 0.1f -> Always policy, delay starts
++	{
++		FailsafeStudentTester failsafe;
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Auto);
++		failsafe.callCheckFailsafe(301, false, true, opt);
++		EXPECT_EQ(failsafe.getActionSlot(0).allow_user_takeover, FailsafeBase::UserTakeoverAllowed::Always);
++		EXPECT_GT(failsafe.getCurrentDelay(), 0_s);
++	}
++
++	// COM_FAIL_ACT_T <= 0.1f -> AlwaysModeSwitchOnly policy
++	{
++		param_t p = param_handle(px4::params::COM_FAIL_ACT_T);
++		float val = 0.1f;
++		param_set(p, &val);
++
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(0);
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Auto);
++		failsafe.callCheckFailsafe(302, false, true, opt);
++		EXPECT_EQ(failsafe.getActionSlot(0).allow_user_takeover, FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		EXPECT_EQ(failsafe.getCurrentDelay(), 0_s);
++
++		// Reset param back to 5.0f
++		val = 5.0f;
++		param_set(p, &val);
++	}
++
++	// Warn action never starts delay
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(0);
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Warn);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Auto);
++		failsafe.callCheckFailsafe(303, false, true, opt);
++		EXPECT_EQ(failsafe.getCurrentDelay(), 0_s);
++	}
++}
++
++// ============================================================================
++// TC-FS-12: Action severity and most restrictive takeover policy selection
++// Obligation: OBL-FS-012, OBL-FS-019
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_12_SeverityAndPolicyPrecedence)
++{
++	FailsafeStudentTester failsafe;
++	failsafe_flags_s flags{};
++
++	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++		// Action 1: Lower severity, permissive takeover
++		FailsafeBase::ActionOptions opt1(FailsafeBase::Action::Hold);
++		opt1.causedBy(FailsafeBase::Cause::Generic);
++		opt1.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		fs->callCheckFailsafe(401, false, true, opt1);
++
++		// Action 2: Higher severity, restrictive takeover
++		FailsafeBase::ActionOptions opt2(FailsafeBase::Action::RTL);
++		opt2.causedBy(FailsafeBase::Cause::BatteryLow);
++		opt2.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		fs->callCheckFailsafe(402, false, true, opt2);
++	});
++
++	failsafe.setCurrentDelay(0);
++	failsafe.update(1_s, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::RTL);
++
++	// Attempt takeover: must be denied because Never policy took precedence
++	failsafe.update(1_s + 10_ms, _default_state, true, true, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::RTL);
++	EXPECT_FALSE(failsafe.userTakeoverActive());
++}
++
++// ============================================================================
++// TC-FS-13: Immediate removal policy (WhenConditionClears)
++// Obligation: OBL-FS-013
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_13_ImmediateRemovalPolicy)
++{
++	FailsafeStudentTester failsafe;
++	FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++	opt.clearOn(FailsafeBase::ClearCondition::WhenConditionClears);
++	opt.id = 501;
++	opt.state_failure = true;
++
++	failsafe.callRemoveAction(opt);
++	EXPECT_FALSE(opt.valid());
++}
++
++// ============================================================================
++// TC-FS-14: Retained clear condition and deferral removal override
++// Obligation: OBL-FS-013
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_14_RetainedClearConditionAndDeferralOverride)
++{
++	FailsafeStudentTester failsafe;
++
++	// OnModeChangeOrDisarm: retained with state_failure = false when not deferring
++	FailsafeBase::ActionOptions opt1(FailsafeBase::Action::RTL);
++	opt1.clearOn(FailsafeBase::ClearCondition::OnModeChangeOrDisarm);
++	opt1.id = 502;
++	opt1.state_failure = true;
++	failsafe.callRemoveAction(opt1);
++	EXPECT_TRUE(opt1.valid());
++	EXPECT_FALSE(opt1.state_failure);
++
++	// Never: retained with state_failure = false
++	FailsafeBase::ActionOptions opt2(FailsafeBase::Action::RTL);
++	opt2.clearOn(FailsafeBase::ClearCondition::Never);
++	opt2.id = 503;
++	opt2.state_failure = true;
++	failsafe.callRemoveAction(opt2);
++	EXPECT_TRUE(opt2.valid());
++	EXPECT_FALSE(opt2.state_failure);
++
++	// While deferring, deferrable action is removed immediately despite retained condition
++	failsafe.deferFailsafes(true, 10);
++	FailsafeBase::ActionOptions opt3(FailsafeBase::Action::RTL);
++	opt3.clearOn(FailsafeBase::ClearCondition::OnModeChangeOrDisarm);
++	opt3.can_be_deferred = true;
++	opt3.id = 504;
++	opt3.state_failure = true;
++	failsafe.callRemoveAction(opt3);
++	EXPECT_FALSE(opt3.valid());
++}
++
++// ============================================================================
++// TC-FS-15: removeNonActivatedActions cleanup of uncalled checks
++// Obligation: OBL-FS-014
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_15_RemoveNonActivatedActions)
++{
++	FailsafeStudentTester failsafe;
++	failsafe_flags_s flags{};
++	const int caller_id = 601;
++	bool include_check = true;
++
++	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++		if (include_check) {
++			FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++			opt.clearOn(FailsafeBase::ClearCondition::WhenConditionClears);
++			fs->callCheckFailsafe(caller_id, false, true, opt);
++		}
++	});
++
++	failsafe.update(1_s, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Descend);
++
++	// Update 2: Omit check. Action must be removed by removeNonActivatedActions
++	include_check = false;
++	failsafe.update(1_s + 10_ms, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++}
++
++// ============================================================================
++// TC-FS-16: Defensive capacity exhaustion and duplicate caller handling
++// Obligation: OBL-FS-015
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_16_DefensiveCapacityAndDuplicateCaller)
++{
++	FailsafeStudentTester failsafe;
++
++	// Fill all 8 action slots with Warn
++	for (int i = 0; i < 8; ++i) {
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Warn);
++		failsafe.callCheckFailsafe(1000 + i, false, true, opt);
++	}
++
++	// 9th caller with higher severity (RTL > Warn) triggers severity replacement
++	FailsafeBase::ActionOptions higher_opt(FailsafeBase::Action::RTL);
++	failsafe.callCheckFailsafe(2000, false, true, higher_opt);
++	EXPECT_EQ(failsafe.getActionSlot(7).action, FailsafeBase::Action::RTL);
++
++	// Duplicate check in same update triggers error reporting branch
++	FailsafeBase::ActionOptions dup_opt(FailsafeBase::Action::Warn);
++	failsafe.callCheckFailsafe(1000, false, true, dup_opt);
++}
++
++// ============================================================================
++// TC-FS-17: Sticky termination behavior
++// Obligation: OBL-FS-017
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_17_StickyTermination)
++{
++	FailsafeStudentTester failsafe;
++	failsafe_flags_s flags{};
++
++	// Enter termination mode
++	_default_state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_TERMINATION;
++	failsafe.update(1_s, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Terminate);
++
++	// Termination is sticky across disarm and mode changes
++	_default_state.armed = false;
++	_default_state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_MANUAL;
++	failsafe.update(1_s + 10_ms, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Terminate);
++}
++
++// ============================================================================
++// TC-FS-18: Disarmed vehicle returns None immediately
++// Obligation: OBL-FS-018
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_18_DisarmedImmediateNone)
++{
++	FailsafeStudentTester failsafe;
++	failsafe_flags_s flags{};
++
++	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++		fs->callCheckFailsafe(701, false, true, opt);
++	});
++
++	_default_state.armed = false;
++	uint8_t mode = failsafe.update(1_s, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++	EXPECT_EQ(mode, _default_state.user_intended_mode);
++}
++
++// ============================================================================
++// TC-FS-19: Deferrable vs non-deferrable actions
++// Obligation: OBL-FS-019, OBL-FS-020
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_19_DeferrableVsNonDeferrableActions)
++{
++	FailsafeStudentTester failsafe;
++	failsafe_flags_s flags{};
++	failsafe.deferFailsafes(true, 10);
++
++	// Deferrable RTL is suppressed
++	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.can_be_deferred = true;
++		fs->callCheckFailsafe(801, false, true, opt);
++	});
++	failsafe.update(1_s, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::None);
++	EXPECT_TRUE(failsafe.failsafeDeferred());
++
++	// Non-deferrable Terminate bypasses suppression
++	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Terminate);
++		opt.cannotBeDeferred();
++		fs->callCheckFailsafe(802, false, true, opt);
++	});
++	failsafe.update(1_s + 10_ms, _default_state, false, false, flags);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Terminate);
++}
++
++// ============================================================================
++// TC-FS-20: Delayed Hold eligibility
++// Obligation: OBL-FS-021
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_20_DelayedHoldEligibility)
++{
++	failsafe_flags_s flags{};
++
++	// Eligible action (RTL) enters Hold first
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++			FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++			fs->callCheckFailsafe(901, false, true, opt);
++		});
++		failsafe.update(1_s, _default_state, false, false, flags);
++		EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Hold);
++	}
++
++	// Disarm does not enter delayed Hold
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++			FailsafeBase::ActionOptions opt(FailsafeBase::Action::Disarm);
++			fs->callCheckFailsafe(902, false, true, opt);
++		});
++		failsafe.update(1_s, _default_state, false, false, flags);
++		EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Disarm);
++	}
++
++	// Terminate does not enter delayed Hold
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++			FailsafeBase::ActionOptions opt(FailsafeBase::Action::Terminate);
++			fs->callCheckFailsafe(903, false, true, opt);
++		});
++		failsafe.update(1_s, _default_state, false, false, flags);
++		EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Terminate);
++	}
++}
++
++// ============================================================================
++// TC-FS-21: Takeover policy matrix and complete MC/DC coverage
++// Obligation: OBL-FS-022, OBL-FS-023; Decisions at 504 and 506-509
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_21_TakeoverPolicyMatrixAndMCDC)
++{
++	failsafe_flags_s flags{};
++
++	// MC-01: A=1, B=0, C=1 (stick), D=0, E=0 -> Takeover allowed (1)
++	{
++		FailsafeStudentTester fs;
++		fs.setCurrentDelay(0);
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		fs.callCheckFailsafe(1001, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		fs.callGetSelectedAction(_default_state, flags, false, true, ret);
++		EXPECT_TRUE(ret.user_takeover);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
++		EXPECT_EQ(ret.updated_user_intended_mode, vehicle_status_s::NAVIGATION_STATE_POSCTL);
++	}
++
++	// MC-02: A=1, B=0, C=0, D=0, E=0 -> No takeover (0) [Independence pair for C with MC-01]
++	{
++		FailsafeStudentTester fs;
++		fs.setCurrentDelay(0);
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		fs.callCheckFailsafe(1002, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		fs.callGetSelectedAction(_default_state, flags, false, false, ret);
++		EXPECT_FALSE(ret.user_takeover);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Descend);
++	}
++
++	// MC-03: A=1, B=1, C=0, D=0, E=0 -> Takeover retained (1) [Independence pair for B with MC-02]
++	{
++		FailsafeStudentTester fs;
++		fs.setCurrentDelay(0);
++		fs.setUserTakeoverActiveDirect(true);
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		fs.callCheckFailsafe(1003, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		fs.callGetSelectedAction(_default_state, flags, false, false, ret);
++		EXPECT_TRUE(ret.user_takeover);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
++	}
++
++	// MC-04: A=0, B=0, C=1 (stick), D=0 (Never), E=0 -> No takeover (0) [Independence pair for A with MC-01]
++	{
++		FailsafeStudentTester fs;
++		fs.setCurrentDelay(0);
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		fs.callCheckFailsafe(1004, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		fs.callGetSelectedAction(_default_state, flags, false, true, ret);
++		EXPECT_FALSE(ret.user_takeover);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Descend);
++	}
++
++	// MC-05: A=0, B=0, C=0, D=1, E=1 -> Takeover allowed (1) [Independence pair for D with MC-06]
++	{
++		FailsafeStudentTester fs;
++		fs.setCurrentDelay(0);
++		fs.setSelectedActionDirect(FailsafeBase::Action::Descend); // G = true (_selected_action > Warn)
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		fs.callCheckFailsafe(1005, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		// user_intended_mode_updated = true (F = true) -> E = F && G = true
++		fs.callGetSelectedAction(_default_state, flags, true, false, ret);
++		EXPECT_TRUE(ret.user_takeover);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
++	}
++
++	// MC-06: A=0, B=0, C=0, D=0 (Never), E=1 -> No takeover (0) [Pair with MC-05 proves D]
++	{
++		FailsafeStudentTester fs;
++		fs.setCurrentDelay(0);
++		fs.setSelectedActionDirect(FailsafeBase::Action::Descend); // G = true
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		fs.callCheckFailsafe(1006, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		fs.callGetSelectedAction(_default_state, flags, true, false, ret);
++		EXPECT_FALSE(ret.user_takeover);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Descend);
++	}
++
++	// MC-07: A=0, B=0, C=0, D=1, E=0 (stick only, mode not updated) -> No takeover (0) [Pair with MC-05 proves E]
++	{
++		FailsafeStudentTester fs;
++		fs.setCurrentDelay(0);
++		fs.setSelectedActionDirect(FailsafeBase::Action::Descend);
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		fs.callCheckFailsafe(1007, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		fs.callGetSelectedAction(_default_state, flags, false, true, ret); // stick true, but mode not updated
++		EXPECT_FALSE(ret.user_takeover);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Descend);
++	}
++
++	// MC-08, MC-09, MC-10 for Line 504: want_user_takeover_mode_switch = F && G
++	// MC-08: F=1, G=1 -> E=1 (tested in MC-05)
++	// MC-09: F=1, G=0 (_selected_action <= Warn) -> E=0 [Independence pair for G with MC-08]
++	{
++		FailsafeStudentTester fs;
++		fs.setCurrentDelay(0);
++		fs.setSelectedActionDirect(FailsafeBase::Action::Warn); // G = false
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		fs.callCheckFailsafe(1009, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		fs.callGetSelectedAction(_default_state, flags, true, false, ret);
++		EXPECT_FALSE(ret.user_takeover);
++	}
++
++	// MC-10: F=0, G=1 -> E=0 [Independence pair for F with MC-08]
++	{
++		FailsafeStudentTester fs;
++		fs.setCurrentDelay(0);
++		fs.setSelectedActionDirect(FailsafeBase::Action::Descend); // G = true
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		fs.callCheckFailsafe(1010, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		fs.callGetSelectedAction(_default_state, flags, false, false, ret); // F = false
++		EXPECT_FALSE(ret.user_takeover);
++	}
++}
++
++// ============================================================================
++// TC-FS-22: Takeover mode fallback severity replacement
++// Obligation: OBL-FS-024
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_22_TakeoverFallbackSeverity)
++{
++	failsafe_flags_s flags{};
++
++	// Fallback severity greater than Warn replaces Warn
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(0);
++		failsafe.setFallbackCheckCallback([](const failsafe_flags_s &, uint8_t) {
++			return FailsafeBase::Action::FallbackAltCtrl;
++		});
++
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Hold);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		failsafe.callCheckFailsafe(1101, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		failsafe.callGetSelectedAction(_default_state, flags, false, true, ret);
++		EXPECT_TRUE(ret.user_takeover);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::FallbackAltCtrl);
++	}
++
++	// Fallback severity equal/lower than Warn does not replace
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(0);
++		failsafe.setFallbackCheckCallback([](const failsafe_flags_s &, uint8_t) {
++			return FailsafeBase::Action::Warn;
++		});
++
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Hold);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		failsafe.callCheckFailsafe(1102, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		failsafe.callGetSelectedAction(_default_state, flags, false, true, ret);
++		EXPECT_TRUE(ret.user_takeover);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
++	}
++}
++
++// ============================================================================
++// TC-FS-23: Mode feasibility fallback cascade down to Terminate
++// Obligation: OBL-FS-025, OBL-FS-028
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_23_ModeFallbackCascade)
++{
++	failsafe_flags_s flags{};
++	flags.angular_velocity_invalid = true; // disables modes requiring angular velocity
++
++	// Mode requirements set to require angular velocity for POSCTL, ALTCTL, STAB, LOITER, RTL, LAND, DESCEND
++	uint32_t mask = (1u << vehicle_status_s::NAVIGATION_STATE_POSCTL) |
++			(1u << vehicle_status_s::NAVIGATION_STATE_ALTCTL) |
++			(1u << vehicle_status_s::NAVIGATION_STATE_STAB) |
++			(1u << vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER) |
++			(1u << vehicle_status_s::NAVIGATION_STATE_AUTO_RTL) |
++			(1u << vehicle_status_s::NAVIGATION_STATE_AUTO_LAND) |
++			(1u << vehicle_status_s::NAVIGATION_STATE_DESCEND);
++
++	flags.mode_req_angular_velocity = mask;
++
++	FailsafeStudentTester failsafe;
++	failsafe.setCurrentDelay(0);
++	FailsafeBase::ActionOptions opt(FailsafeBase::Action::FallbackPosCtrl);
++	failsafe.callCheckFailsafe(1201, false, true, opt);
++
++	FailsafeBase::SelectedActionState ret{};
++	failsafe.callGetSelectedAction(_default_state, flags, false, false, ret);
++
++	// All modes rejected by modeCanRun -> falls through switch all the way to Terminate
++	EXPECT_EQ(ret.action, FailsafeBase::Action::Terminate);
++	EXPECT_EQ(ret.cause, FailsafeBase::Cause::Generic);
++}
++
++// ============================================================================
++// TC-FS-24: AUTO_LAND redundant RTL UX guard
++// Obligation: OBL-FS-026
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_24_AutoLandRedundantRTLGuard)
++{
++	failsafe_flags_s flags{};
++
++	// When in AUTO_LAND and action is RTL, convert to Warn if AUTO_LAND can run
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(0);
++		FailsafeBase::State state = _default_state;
++		state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND;
++
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		failsafe.callCheckFailsafe(1301, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		failsafe.callGetSelectedAction(state, flags, false, false, ret);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
++		EXPECT_EQ(ret.delayed_action, FailsafeBase::Action::None);
++	}
++
++	// When AUTO_LAND cannot run, guard does NOT convert
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(0);
++		FailsafeBase::State state = _default_state;
++		state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND;
++
++		failsafe_flags_s unavail_flags = flags;
++		unavail_flags.attitude_invalid = true;
++		unavail_flags.mode_req_attitude = (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_LAND);
++
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		failsafe.callCheckFailsafe(1302, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		failsafe.callGetSelectedAction(state, unavail_flags, false, false, ret);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::RTL);
++	}
++}
++
++// ============================================================================
++// TC-FS-25: AUTO_RTL and AUTO_PRECLAND redundant action guards
++// Obligation: OBL-FS-026
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_25_AutoRTLAndPreclandGuards)
++{
++	failsafe_flags_s flags{};
++
++	// AUTO_RTL suppresses RTL
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(0);
++		FailsafeBase::State state = _default_state;
++		state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_AUTO_RTL;
++
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		failsafe.callCheckFailsafe(1401, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		failsafe.callGetSelectedAction(state, flags, false, false, ret);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
++	}
++
++	// AUTO_PRECLAND suppresses Land
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(0);
++		FailsafeBase::State state = _default_state;
++		state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND;
++
++		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Land);
++		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		failsafe.callCheckFailsafe(1402, false, true, opt);
++
++		FailsafeBase::SelectedActionState ret{};
++		failsafe.callGetSelectedAction(state, flags, false, false, ret);
++		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
++	}
++}
++
++// ============================================================================
++// TC-FS-26: Delay clearing causes in clearDelayIfNeeded
++// Obligation: OBL-FS-027
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_26_DelayClearingCauses)
++{
++	failsafe_flags_s flags{};
++
++	// Cause 1: _selected_action > Action::Hold (e.g. RTL)
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(5_s);
++		failsafe.setSelectedActionDirect(FailsafeBase::Action::RTL);
++		failsafe.callClearDelayIfNeeded(_default_state, flags);
++		EXPECT_EQ(failsafe.getCurrentDelay(), 0_s);
++	}
++
++	// Cause 2: AUTO_LOITER (Hold) cannot run
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(5_s);
++		failsafe.setSelectedActionDirect(FailsafeBase::Action::Hold);
++
++		failsafe_flags_s bad_flags = flags;
++		bad_flags.local_position_invalid = true;
++		bad_flags.mode_req_local_position = (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER);
++
++		failsafe.callClearDelayIfNeeded(_default_state, bad_flags);
++		EXPECT_EQ(failsafe.getCurrentDelay(), 0_s);
++	}
++
++	// Cause 3: _user_takeover_active == true
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(5_s);
++		failsafe.setSelectedActionDirect(FailsafeBase::Action::Hold);
++		failsafe.setUserTakeoverActiveDirect(true);
++		failsafe.callClearDelayIfNeeded(_default_state, flags);
++		EXPECT_EQ(failsafe.getCurrentDelay(), 0_s);
++	}
++
++	// Normal case: delay retained
++	{
++		FailsafeStudentTester failsafe;
++		failsafe.setCurrentDelay(5_s);
++		failsafe.setSelectedActionDirect(FailsafeBase::Action::Hold);
++		failsafe.setUserTakeoverActiveDirect(false);
++		failsafe.callClearDelayIfNeeded(_default_state, flags);
++		EXPECT_EQ(failsafe.getCurrentDelay(), 5_s);
++	}
++}
++
++// ============================================================================
++// TC-FS-27: modeCanRun condition truth table for each requirement flag
++// Obligation: OBL-FS-028
++// ============================================================================
++TEST_F(FailsafeStudentTest, TC_FS_27_ModeCanRunRequirementMaskTruthCases)
++{
++	const uint8_t mode = vehicle_status_s::NAVIGATION_STATE_POSCTL;
++	const uint32_t mode_mask = (1u << mode);
++
++	// Baseline: all flags clear -> modeCanRun is true
++	failsafe_flags_s base_flags{};
++	EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(base_flags, mode));
++
++	// 1. angular_velocity_invalid
++	{
++		failsafe_flags_s f = base_flags;
++		f.angular_velocity_invalid = true;
++		f.mode_req_angular_velocity = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_angular_velocity = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++
++	// 2. attitude_invalid
++	{
++		failsafe_flags_s f = base_flags;
++		f.attitude_invalid = true;
++		f.mode_req_attitude = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_attitude = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++
++	// 3. local_position_invalid
++	{
++		failsafe_flags_s f = base_flags;
++		f.local_position_invalid = true;
++		f.mode_req_local_position = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_local_position = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++
++	// 4. local_position_invalid_relaxed
++	{
++		failsafe_flags_s f = base_flags;
++		f.local_position_invalid_relaxed = true;
++		f.mode_req_local_position_relaxed = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_local_position_relaxed = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++
++	// 5. global_position_invalid
++	{
++		failsafe_flags_s f = base_flags;
++		f.global_position_invalid = true;
++		f.mode_req_global_position = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_global_position = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++
++	// 6. global_position_invalid_relaxed
++	{
++		failsafe_flags_s f = base_flags;
++		f.global_position_invalid_relaxed = true;
++		f.mode_req_global_position_relaxed = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_global_position_relaxed = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++
++	// 7. local_altitude_invalid
++	{
++		failsafe_flags_s f = base_flags;
++		f.local_altitude_invalid = true;
++		f.mode_req_local_alt = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_local_alt = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++
++	// 8. auto_mission_missing
++	{
++		failsafe_flags_s f = base_flags;
++		f.auto_mission_missing = true;
++		f.mode_req_mission = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_mission = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++
++	// 9. offboard_control_signal_lost
++	{
++		failsafe_flags_s f = base_flags;
++		f.offboard_control_signal_lost = true;
++		f.mode_req_offboard_signal = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_offboard_signal = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++
++	// 10. home_position_invalid
++	{
++		failsafe_flags_s f = base_flags;
++		f.home_position_invalid = true;
++		f.mode_req_home_position = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_home_position = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++
++	// 11. mode_req_other
++	{
++		failsafe_flags_s f = base_flags;
++		f.mode_req_other = mode_mask;
++		EXPECT_FALSE(FailsafeStudentTester::callModeCanRun(f, mode));
++		f.mode_req_other = 0;
++		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
++	}
++}

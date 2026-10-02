@@ -1,3 +1,15 @@
+# Explicitly ignore external repository, build artifacts, and editor temporary files
+PX4-Autopilot/
+build/
+.cache/
+.vscode/
+.idea/
+*.tmp
+*.swp
+*~
+__pycache__/
+.DS_Store
+
 # Ignore everything by default
 /*
 
@@ -14,3 +26,9 @@
 !/evidence/**
 !/deliverables/
 !/deliverables/**
+!/patches/
+!/patches/**
+!/docs/
+!/docs/**
+!/workbook/
+!/workbook/**
