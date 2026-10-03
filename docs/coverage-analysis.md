@@ -85,3 +85,48 @@ For every statement or branch in `framework.cpp` that remains unexecuted, the in
 - **Why Not Covered**: The default base method in `FailsafeBase` is a polymorphic hook overridden by vehicle-specific subclasses (e.g., fixed-wing vs multicopter); in base state machine testing, no modification is needed. In capacity exhaustion, `TC-FS-16` tests higher-severity replacement (`free_idx != -1`); the drop branch leaves `free_idx == -1` and safely ignores the action without side effects.
 - **Reachability**: Subclass hook fallback and defensive capacity fallback.
 - **Justification**: Clean polymorphic interface design and defensive boundary protecting fixed-size static allocation from buffer overflow.
+
+---
+
+## 3. Branch & Decision Coverage: Tool Configuration & Recording Procedure
+
+### A. Root Cause of Missing Branch Data in Upstream Baseline
+In upstream PX4's `Makefile:415-425`, the coverage target invokes `lcov` as follows:
+```makefile
+lcov --directory build/px4_sitl_test --base-directory build/px4_sitl_test --gcov-tool gcov --capture -o coverage/lcov.info
+```
+In `lcov`, **branch coverage collection is disabled by default**. Without explicitly passing `--rc branch_coverage=1`, `lcov` discards all branch transition records (`BRDA`, `BRF`, `BRH`), yielding zero branch data.
+
+### B. Recording Tool-Measured Branch Coverage
+To capture genuine, tool-measured branch statistics:
+1. **Compile with Coverage Profiling**: Configure CMake with `-DCMAKE_BUILD_TYPE=Coverage` (which injects GCC's `-fprofile-arcs -ftest-coverage`).
+2. **Execute Student Tests**: Run `functional-failsafe_student_test` to write out `.gcda` branch transition counters.
+3. **Capture with Branch Flag Enabled**: Invoke `lcov` with `--rc branch_coverage=1`.
+4. **Extract Target Scope**: Filter strictly to `framework.cpp` and `framework.h`.
+5. **Generate Visual HTML Report**: Invoke `genhtml` with `--rc branch_coverage=1`.
+
+### C. Automated Recording Script
+The repository provides an automated reproduction script:
+```bash
+bash scripts/record_branch_coverage.sh
+```
+This script:
+- Compiles `PX4-Autopilot/build/px4_coverage` with `-DCMAKE_BUILD_TYPE=Coverage`.
+- Builds and executes `functional-failsafe_student_test`.
+- Captures and filters branch data using `lcov --rc branch_coverage=1`.
+- Saves the filtered tracefile to `evidence/coverage/final/failsafe_student_branch.info`.
+- Generates an interactive visual HTML report under `evidence/coverage/final/html/index.html`.
+
+### D. Decision & Branch Coverage Mapping
+Across all 28 structural obligations (`OBL-FS-001` through `OBL-FS-028`), both True and False outcomes of all reachable decisions in `framework.cpp` and `framework.h` are exercised by `TC-FS-01` through `TC-FS-27`:
+- **Enum Branching (`framework.h:93-118`)**: All 11 enum cases and invalid defaults covered (`TC-FS-01`).
+- **Mode Mapping (`framework.cpp:672-697`)**: All 7 mode-producing actions and default non-mode fallthrough covered (`TC-FS-02`).
+- **Timing Initialization (`framework.cpp:38-41`)**: Both `_last_update == 0` and `_last_update != 0` branches covered (`TC-FS-03`).
+- **State Transition Clearing (`framework.cpp:52-70`)**: Armed-to-disarmed, disarmed-to-armed, and mode switches covered (`TC-FS-04`, `TC-FS-05`).
+- **Deferral Timing (`framework.cpp:73-76`, `718-738`)**: Finite boundary (`t + 2s` vs `t + 2s + 1us`) and infinite (`timeout = -1`) branches covered (`TC-FS-06`).
+- **Delay Dynamics (`framework.cpp:125-141`, `742-750`)**: Subtraction, zero clamping, slower regrowth (`dt/4`), and parameter capping covered (`TC-FS-08`, `TC-FS-09`).
+- **Slot Allocation & Replacement (`framework.cpp:313-345`)**: Existing slot update, empty slot allocation, and capacity severity replacement covered (`TC-FS-10`, `TC-FS-16`).
+- **Pilot Takeover Compound Decisions (`framework.cpp:504`, `506-509`)**: Complete 10/10 MC/DC independence pairs matrix covered (`TC-FS-21`).
+- **Mode Fallback Cascade (`framework.cpp:540-615`)**: Switch fallthrough across degraded sensor states covered (`TC-FS-23`).
+- **Redundant UX Guards (`framework.cpp:619-644`)**: `AUTO_LAND`, `AUTO_RTL`, and `AUTO_PRECLAND` suppression branches covered (`TC-FS-24`, `TC-FS-25`).
+- **Mode Feasibility Bitmasks (`framework.cpp:708-718`)**: All 11 failure flags and requirement bitmasks systematically evaluated (`TC-FS-27`).

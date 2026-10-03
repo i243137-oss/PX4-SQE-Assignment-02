@@ -34,7 +34,7 @@ This repository contains the complete artifacts, test suite, and structural cove
 | **Total Scope Line Coverage** | **281 / 347 (81.0%)** | **334 / 347 (96.3%)** | **+15.3% Net Increase** |
 | **Function Coverage** | **30 / 32 (93.8%)** | **32 / 32 (100.0%)** | **100% Covered** |
 | **Takeover Decision MC/DC** | Not analyzed upstream | **10 / 10 Independence Pairs** | **100% Verified** |
-| **Branch / Decision Coverage** | Not recorded by tool | Outcome B Investigation (Tool Limitations Documented) | 28 / 28 Obligations Verified |
+| **Branch / Decision Coverage** | Not recorded upstream (tool flag omitted) | Recorded via `scripts/record_branch_coverage.sh` & GitHub Actions CI | 28 / 28 Obligations Verified |
 | **Production Code Logic Changes** | N/A | **0 Lines Altered** in `framework.cpp` | **Preserved Invariant** |
 
 ---

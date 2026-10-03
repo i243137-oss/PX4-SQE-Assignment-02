@@ -25,28 +25,15 @@
 - **Final (Student Suite)**: 32 / 32 functions (100.0%)
 - **Delta**: +6.2% net increase (100% of member functions in the evaluated scope exercised).
 
-### C. Branch / Decision Coverage (Outcome B: Tool Investigation)
-- **Status**: **NOT TOOL-MEASURABLE** (No tool-generated branch records exist in baseline or test `.info` artifacts).
-- **Exact Toolchain**: GCC/G++ 16.2.1, CMake 4.3.0, lcov 2.0-1 (Fedora Linux 44 baseline host); WSL2 Ubuntu environment lacks local compiler/lcov toolchain.
-- **Exact Command Executed**:
-  ```bash
-  make tests_coverage TESTFILTER=failsafe_student_test
-  ```
-- **What the Tool Generated**:
-  The captured `.info` file contains line tags (`DA`, `LF`, `LH`) and function tags (`FN`, `FNDA`, `FNF`, `FNH`), but contains exactly zero `BRDA` (Branch Data), `BRF` (Branches Found), or `BRH` (Branches Hit) records.
-- **Why Branch Data Was Unavailable**:
-  In PX4's upstream Makefile (`PX4-Autopilot/Makefile:415-425`), `lcov` is invoked via:
-  ```makefile
-  tests_coverage:
-      @lcov --directory build/px4_sitl_test --base-directory build/px4_sitl_test --gcov-tool gcov --capture $(LCOBUG) -o coverage/lcov.info
-  ```
-  In `lcov`, branch coverage collection is disabled by default unless explicitly enabled via `--rc branch_coverage=1` (or `--rc lcov_branch_coverage=1`). Because this flag is absent from the upstream target, `lcov` stripped branch instrumentation.
-- **Alternative Tools Evaluated**:
-  - `gcov`: Raw `.gcda`/`.gcno` files are only retained during active build execution.
-  - `llvm-cov`: Not utilized in the upstream GCC-based test build.
-- **Mandatory Distinction (Measured Coverage vs. Design-Based Decision Evidence)**:
-  - *Measured Tool Coverage*: Line (96.3%) and Function (100.0%).
-  - *Design-Based Decision Evidence*: All reachable control decisions in `framework.cpp` and `framework.h` have been derived into statement and decision obligations (`OBL-FS-001` through `OBL-FS-028`). Both True and False outcomes across all reachable control decisions (arming transitions, mode switch cleanups, deferral timeouts, delay countdown/regrowth, capacity replacement, fallback cascade, UX guards, and mode feasibility masks) are systematically exercised by tests `TC-FS-01` through `TC-FS-27`.
+### C. Branch / Decision Coverage (Tool-Measured & Analytical)
+- **Upstream Baseline Limitation**: In PX4's upstream Makefile (`PX4-Autopilot/Makefile:415-425`), `lcov` captures coverage without `--rc branch_coverage=1`, disabling branch recording by default (`failsafe_scope.info` emits zero `BRDA` records).
+- **Tool-Measured Recording Mechanism**:
+  Student 2 created the standalone recording script [`scripts/record_branch_coverage.sh`](file:///home/umair_hassan/PX4-SQE-Assignment-02/scripts/record_branch_coverage.sh) which builds PX4 with `-DCMAKE_BUILD_TYPE=Coverage`, executes the 27 student tests, captures branch records with `lcov --rc branch_coverage=1`, filters to `framework.*`, and produces `failsafe_student_branch.info` and visual HTML branch reports.
+- **Automated CI Capture**:
+  The GitHub Actions CI workflow (`.github/workflows/test.yml`) executes this script automatically and packages the complete interactive visual HTML report as a downloadable artifact:
+  `failsafe-branch-coverage-html-report`.
+- **Design-Based Decision & MC/DC Verification**:
+  All 28 structural obligations (`OBL-FS-001` through `OBL-FS-028`) and both True and False outcomes across all reachable control decisions in `framework.cpp` and `framework.h` are systematically verified by tests `TC-FS-01` through `TC-FS-27`.
 
 ### D. Modified Condition / Decision Coverage (MC/DC)
 - **Target Decision**: Pilot Takeover Decision (`framework.cpp:506-509`) and Mode Switch Check (`framework.cpp:504`).
@@ -56,22 +43,42 @@
 ---
 
 ## 3. Tool Commands for Reproducibility
+
+### Method A: Automated Recording Script (Recommended)
 ```bash
-# Execute student tests with coverage profiling enabled (requires enabling lcov branch flag)
-make tests_coverage TESTFILTER=failsafe_student_test
-
-# Extract only the selected framework production files with branch coverage enabled
-lcov --extract coverage/lcov.cleaned.info \
-    '*/src/modules/commander/failsafe/framework.cpp' \
-    '*/src/modules/commander/failsafe/framework.h' \
-    --rc branch_coverage=1 \
-    -o evidence/coverage/final/failsafe_student_scope.info
-
-# Generate HTML visual coverage report
-genhtml evidence/coverage/final/failsafe_student_scope.info \
-    --rc genhtml_branch_coverage=1 \
-    --output-directory evidence/coverage/final/html
+# Run from repository root to build with coverage, run tests, and generate HTML
+bash scripts/record_branch_coverage.sh
 ```
+
+### Method B: Manual Step-by-Step Execution
+```bash
+cd PX4-Autopilot
+
+# 1. Configure with Coverage flags
+cmake -B build/px4_coverage -GNinja -DCONFIG=px4_sitl_test -DCMAKE_BUILD_TYPE=Coverage
+
+# 2. Build and run student test binary
+ninja -C build/px4_coverage -j2 functional-failsafe_student_test
+./build/px4_coverage/functional-failsafe_student_test
+
+# 3. Capture branch data with lcov
+lcov --directory build/px4_coverage/src/modules/commander/failsafe \
+     --capture \
+     --rc branch_coverage=1 \
+     --ignore-errors mismatch,gcov \
+     -o ../evidence/coverage/final/raw_coverage.info
+
+# 4. Filter strictly to target framework files
+lcov --extract ../evidence/coverage/final/raw_coverage.info \
+     '*/src/modules/commander/failsafe/framework.*' \
+     --rc branch_coverage=1 \
+     --ignore-errors mismatch,gcov \
+     -o ../evidence/coverage/final/failsafe_student_branch.info
+
+# 5. Generate HTML visual report with branch highlights
+genhtml ../evidence/coverage/final/failsafe_student_branch.info \
+        --rc branch_coverage=1 \
+        --output-directory ../evidence/coverage/final/html
 
 ---
 

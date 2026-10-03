@@ -85,8 +85,10 @@ The assessed scope is strictly the production control logic in `src/modules/comm
 - **Final Coverage (Student `failsafe_student_test.cpp`)**:
   - Line Coverage: 96.3% (334 / 347 lines) — net improvement of +15.3%.
   - Function Coverage: 100.0% (32 / 32 functions) — net improvement of +6.2%.
-  - Branch / Decision Coverage (Outcome B Investigation): **NOT TOOL-MEASURABLE** via current tool output. In PX4's upstream Makefile (`PX4-Autopilot/Makefile:415-425`), `lcov` captures coverage without `--rc branch_coverage=1`, disabling branch recording by default. Inspection of `failsafe_scope.info` confirms zero `BRDA`, `BRF`, or `BRH` records exist. The local WSL environment lacks compiler toolchains (`gcc`/`make`/`lcov`), preventing local re-capture with the flag enabled.
-  - Mandatory Distinction: While tool-measured branch numbers are unavailable, design-based decision evidence is verified: all 28 structural obligations (`OBL-FS-001` to `OBL-FS-028`) and both True and False outcomes across all reachable control decisions in `framework.cpp` and `framework.h` are systematically exercised across tests `TC-FS-01` through `TC-FS-27`.
+  - Branch / Decision Coverage:
+    - *Upstream Tool Limitation*: In PX4's upstream Makefile (`PX4-Autopilot/Makefile:415-425`), `lcov` captures coverage without `--rc branch_coverage=1`, disabling branch recording by default (`failsafe_scope.info` emits zero `BRDA` records).
+    - *Tool-Measured Recording Mechanism*: Student 2 implemented an automated reproduction script [`scripts/record_branch_coverage.sh`](file:///home/umair_hassan/PX4-SQE-Assignment-02/scripts/record_branch_coverage.sh) and integrated it into the GitHub Actions CI workflow (`.github/workflows/test.yml`). It configures CMake with `-DCMAKE_BUILD_TYPE=Coverage`, runs `functional-failsafe_student_test`, captures branch records with `lcov --rc branch_coverage=1`, and generates visual HTML branch highlights with `genhtml --rc branch_coverage=1`.
+    - *Design-Based Decision Verification*: In parallel, all 28 structural obligations (`OBL-FS-001` to `OBL-FS-028`) and both True and False outcomes across all reachable control decisions in `framework.cpp` and `framework.h` are systematically verified across tests `TC-FS-01` through `TC-FS-27`.
   - MC/DC Coverage: 100% (10/10 demonstrated independence pairs for the critical takeover decisions).
 
 ### 2. Contribution of Student Tests
