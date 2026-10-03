@@ -20,7 +20,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build python3-pip
+          sudo apt-get install -y cmake ninja-build python3-pip lcov
           pip3 install --user --break-system-packages kconfiglib jinja2 empy==3.3.4 jsonschema pyros-genmsg pyyaml
 
       - name: Clone PX4 Autopilot v1.17.0
@@ -47,6 +47,10 @@ jobs:
         run: |
           cd PX4-Autopilot
           ./build/px4_sitl_test/functional-failsafe_student_test 2>&1 | tee test_execution_ci.log
+
+      - name: Record Branch and Decision Coverage via lcov
+        run: |
+          bash scripts/record_branch_coverage.sh
 
       - name: Generate Job Summary
         if: always()
@@ -82,7 +86,8 @@ jobs:
           ### 📦 Downloadable Run Artifacts
           You can download the verified test run artifacts from the **Artifacts** section at the bottom of this summary page:
           1. **\`failsafe-student-test-evidence\`**: Contains the live CI test run log, the standalone patch (\`px4-v1.17.0-student-changes.patch\`), Part 3 report, and coverage analysis documentation.
-          2. **\`functional-failsafe_student_test-binary\`**: The pre-compiled standalone test binary built on Linux x86_64.
+          2. **\`failsafe-branch-coverage-html-report\`**: The full visual HTML branch and statement coverage report generated with \`genhtml --rc branch_coverage=1\`.
+          3. **\`functional-failsafe_student_test-binary\`**: The pre-compiled standalone test binary built on Linux x86_64.
           EOF
 
       - name: Upload Test Evidence Artifacts
@@ -94,8 +99,17 @@ jobs:
             PX4-Autopilot/test_execution_ci.log
             patches/px4-v1.17.0-student-changes.patch
             evidence/tests/student_test_run.log
+            evidence/coverage/final/failsafe_student_branch.info
             report/part3.md
             docs/coverage-analysis.md
+          retention-days: 30
+
+      - name: Upload Branch Coverage HTML Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failsafe-branch-coverage-html-report
+          path: evidence/coverage/final/html/
           retention-days: 30
 
       - name: Upload Compiled Test Binary
