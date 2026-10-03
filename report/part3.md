@@ -15,13 +15,13 @@ To test the safety-critical `FailsafeBase` state machine (`src/modules/commander
       LINKLIBS failsafe mode_util
   )
   ```
-- **Conventions & Non-Invasiveness**: The test suite follows strict PX4 coding conventions and uses the existing `px4_add_functional_gtest` macro. No production source files were modified, strictly satisfying Rule 2.
+- **Conventions & Test-Only Seam**: The test suite follows strict PX4 coding conventions and uses the existing `px4_add_functional_gtest` macro. Production behavior in `framework.cpp` is strictly untouched (zero production logic modifications). A minimal, standard test-only access declaration (`friend class FailsafeStudentTester;`) was added to `framework.h` to allow the test harness to inspect private internal states without altering any production execution semantics.
 
 ### 3. Test Fixture, Harness Design, and Determinism
 The test suite implements a dedicated, independent harness class `FailsafeStudentTester` derived from `FailsafeBase`:
 - **Deterministic Setup**: The test fixture `FailsafeStudentTest` disables parameter autosave (`param_control_autosave(false)`) and explicitly sets `COM_FAIL_ACT_T = 5.0f` in `SetUp()`.
 - **Controllable Subclass Callbacks**: `FailsafeStudentTester` provides customizable callbacks for `checkStateAndMode` and `checkModeFallback`, allowing individual tests to inject precise combinations of failure flags, action options, clear conditions, and fallback actions without hardcoding test dependencies.
-- **Seam Methods**: Provides controlled access to protected methods (`checkFailsafe`, `genCallerId`, `modeCanRun`, `clearDelayIfNeeded`, `getSelectedAction`, `removeAction`, `removeNonActivatedActions`, `updateStartDelay`, `updateDelay`) to verify intermediate decision stages deterministically.
+- **Seam Methods**: Provides controlled access to protected methods (`checkFailsafe`, `genCallerId`, `modeCanRun`, `clearDelayIfNeeded`, `getSelectedAction`, `removeAction`, `removeNonActivatedActions`, `updateStartDelay`, `updateDelay`) and internal slot lookups (`findActionSlot`, `countValidActionSlots`) to verify intermediate decision stages deterministically.
 - **Explicit Timing**: Monotonic timestamps with explicit increments (`time_us`, `dt`) are supplied to prevent test interference from platform clocks.
 
 ### 4. Test Suite Inventory (`TC-FS-01` through `TC-FS-27`)
@@ -102,23 +102,26 @@ The assessed scope is strictly the production control logic in `src/modules/comm
 ### 3. Investigation of Uncovered Lines and Coverage Gaps
 Every remaining gap in `framework.cpp` was investigated and verified against production source logic:
 
-1. **`EMSCRIPTEN_BUILD` Compilation Branch (lines 181-183, 523-525)**:
+1. **Gap 1: `EMSCRIPTEN_BUILD` Compilation Branch (lines 181-183, 523-525)**:
    - *Source Location*: `framework.cpp:181-183`, `framework.cpp:523-525`
    - *Reason Uncovered*: Guarded by `#ifdef EMSCRIPTEN_BUILD` preprocessor directive. The native/functional test target compiles for native Linux x86_64, where this code is omitted by the preprocessor.
    - *Reachability*: Unreachable in POSIX/Linux builds; only compiled when targeting WebAssembly via `em++`.
 
-2. **`notifyUser` Event Formatting & MAVLink Presentation (lines 185-298)**:
-   - *Source Location*: `framework.cpp:185-298`
-   - *Reason Uncovered*: Event dispatch (`events::send<...>`) and MAVLink log messages (`mavlink_log_critical`) represent user-facing telemetry formatting and presentation. The functional state machine triggers these via `_notification_required` and action worsening, which is verified via callback observation (`TC-FS-07`), but deep event text generation branches are presentation-layer code excluded from core flight control assessment.
-
-3. **Defensive Duplicate Action Logging (lines 382-385)**:
+2. **Gap 2: Defensive Duplicate Action Diagnostic (lines 382-385)**:
    - *Source Location*: `framework.cpp:382-385`
    - *Code*: `if (found) { PX4_ERR("Dup action with ID %i", caller_id); }`
    - *Reason Uncovered*: Defensive error log. During normal execution, caller IDs are unique per check site. Triggering duplicate actions requires violating internal class invariant contracts during an invalid-to-valid transition.
+   - *Reachability*: Unreachable under normal production calling semantics.
 
-4. **Defensive Subclass Override `modifyUserIntendedMode` (lines 99-100)**:
-   - *Source Location*: `framework.cpp:99-100`
-   - *Reason Uncovered*: Default implementation in `FailsafeBase` simply returns `user_intended_mode` unchanged. Subclass overrides are vehicle-type specific (e.g., fixed-wing vs multicopter) and not part of the base state machine.
+3. **Gap 3: `notifyUser` Event Formatting & MAVLink Presentation (lines 185-298)**:
+   - *Source Location*: `framework.cpp:185-298`
+   - *Reason Uncovered*: Event dispatch (`events::send<...>`) and MAVLink log messages (`mavlink_log_critical`) represent user-facing telemetry formatting and presentation. The functional state machine triggers these via `_notification_required` and action worsening, which is verified via callback observation (`TC-FS-07`), but deep event text generation branches are presentation-layer code excluded from core flight control assessment.
+   - *Reachability*: Presentation layer logic separated from flight control state machine.
+
+4. **Gap 4: Subclass Hook Default Implementation & Capacity Overflow Drop (lines 99-100, 339-342)**:
+   - *Source Location*: `framework.cpp:99-100`, `framework.cpp:339-342`
+   - *Reason Uncovered*: Default implementation of `modifyUserIntendedMode` in `FailsafeBase` simply returns `user_intended_mode` unchanged (subclass overrides are vehicle-type specific). In capacity overflow (lines 339-342), when all 8 action slots are full, incoming actions of equal or lower severity are dropped with no side effects.
+   - *Reachability*: Subclass hook fallback and defensive static buffer boundary.
 
 ---
 

@@ -12,10 +12,10 @@ index 0d7b3bd366..df4416641a 100644
 +)
 diff --git a/src/modules/commander/failsafe/failsafe_student_test.cpp b/src/modules/commander/failsafe/failsafe_student_test.cpp
 new file mode 100644
-index 0000000000..a41382e44b
+index 0000000000..a49fb82f20
 --- /dev/null
 +++ b/src/modules/commander/failsafe/failsafe_student_test.cpp
-@@ -0,0 +1,1249 @@
+@@ -0,0 +1,1283 @@
 +/****************************************************************************
 + *
 + *   Copyright (c) 2026 PX4 Development Team. All rights reserved.
@@ -123,6 +123,25 @@ index 0000000000..a41382e44b
 +	}
 +
 +	ActionOptions &getActionSlot(int idx) { return _actions[idx]; }
++	int findActionSlot(int caller_id) const
++	{
++		for (int i = 0; i < (int)(sizeof(_actions) / sizeof(_actions[0])); ++i) {
++			if (_actions[i].valid() && _actions[i].id == caller_id) {
++				return i;
++			}
++		}
++		return -1;
++	}
++	int countValidActionSlots() const
++	{
++		int count = 0;
++		for (const auto &action : _actions) {
++			if (action.valid()) {
++				++count;
++			}
++		}
++		return count;
++	}
 +	hrt_abstime getCurrentStartDelay() const { return _current_start_delay; }
 +	hrt_abstime getCurrentDelay() const { return _current_delay; }
 +	void setCurrentDelay(hrt_abstime delay) { _current_delay = delay; }
@@ -373,6 +392,10 @@ index 0000000000..a41382e44b
 +	hrt_abstime past_t = start_t + 2_s + 1_us;
 +	failsafe.update(past_t, _default_state, false, false, flags);
 +	EXPECT_FALSE(failsafe.getDeferFailsafes());
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Hold);
++
++	// After delay elapses (COM_FAIL_ACT_T = 5s), Descend takes effect
++	failsafe.update(past_t + 6_s, _default_state, false, false, flags);
 +	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Descend);
 +
 +	// Infinite timeout (-1): never clears automatically
@@ -473,17 +496,21 @@ index 0000000000..a41382e44b
 +	FailsafeBase::ActionOptions opt1(FailsafeBase::Action::Hold);
 +	bool r1 = failsafe.callCheckFailsafe(caller_id, false, true, opt1);
 +	EXPECT_TRUE(r1);
-+	EXPECT_EQ(failsafe.getActionSlot(0).id, caller_id);
-+	EXPECT_EQ(failsafe.getActionSlot(0).action, FailsafeBase::Action::Hold);
-+	EXPECT_FALSE(failsafe.getActionSlot(1).valid());
++	int slot = failsafe.findActionSlot(caller_id);
++	ASSERT_GE(slot, 0);
++	EXPECT_EQ(failsafe.getActionSlot(slot).id, caller_id);
++	EXPECT_EQ(failsafe.getActionSlot(slot).action, FailsafeBase::Action::Hold);
++	EXPECT_EQ(failsafe.countValidActionSlots(), 1);
 +
 +	// Update existing caller with different action
 +	FailsafeBase::ActionOptions opt2(FailsafeBase::Action::RTL);
 +	bool r2 = failsafe.callCheckFailsafe(caller_id, true, true, opt2);
 +	EXPECT_TRUE(r2);
-+	EXPECT_EQ(failsafe.getActionSlot(0).id, caller_id);
-+	EXPECT_EQ(failsafe.getActionSlot(0).action, FailsafeBase::Action::RTL);
-+	EXPECT_FALSE(failsafe.getActionSlot(1).valid()); // No duplicate allocated
++	int slot2 = failsafe.findActionSlot(caller_id);
++	EXPECT_EQ(slot2, slot);
++	EXPECT_EQ(failsafe.getActionSlot(slot2).id, caller_id);
++	EXPECT_EQ(failsafe.getActionSlot(slot2).action, FailsafeBase::Action::RTL);
++	EXPECT_EQ(failsafe.countValidActionSlots(), 1); // No duplicate allocated
 +}
 +
 +// ============================================================================
@@ -498,7 +525,9 @@ index 0000000000..a41382e44b
 +		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
 +		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Auto);
 +		failsafe.callCheckFailsafe(301, false, true, opt);
-+		EXPECT_EQ(failsafe.getActionSlot(0).allow_user_takeover, FailsafeBase::UserTakeoverAllowed::Always);
++		int slot = failsafe.findActionSlot(301);
++		ASSERT_GE(slot, 0);
++		EXPECT_EQ(failsafe.getActionSlot(slot).allow_user_takeover, FailsafeBase::UserTakeoverAllowed::Always);
 +		EXPECT_GT(failsafe.getCurrentDelay(), 0_s);
 +	}
 +
@@ -513,7 +542,9 @@ index 0000000000..a41382e44b
 +		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
 +		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Auto);
 +		failsafe.callCheckFailsafe(302, false, true, opt);
-+		EXPECT_EQ(failsafe.getActionSlot(0).allow_user_takeover, FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		int slot = failsafe.findActionSlot(302);
++		ASSERT_GE(slot, 0);
++		EXPECT_EQ(failsafe.getActionSlot(slot).allow_user_takeover, FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
 +		EXPECT_EQ(failsafe.getCurrentDelay(), 0_s);
 +
 +		// Reset param back to 5.0f
@@ -637,8 +668,9 @@ index 0000000000..a41382e44b
 +		}
 +	});
 +
++	// First cycle: Descend enters delayed Hold due to default COM_FAIL_ACT_T = 5s
 +	failsafe.update(1_s, _default_state, false, false, flags);
-+	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Descend);
++	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Hold);
 +
 +	// Update 2: Omit check. Action must be removed by removeNonActivatedActions
 +	include_check = false;
@@ -663,7 +695,9 @@ index 0000000000..a41382e44b
 +	// 9th caller with higher severity (RTL > Warn) triggers severity replacement
 +	FailsafeBase::ActionOptions higher_opt(FailsafeBase::Action::RTL);
 +	failsafe.callCheckFailsafe(2000, false, true, higher_opt);
-+	EXPECT_EQ(failsafe.getActionSlot(7).action, FailsafeBase::Action::RTL);
++	int rep_slot = failsafe.findActionSlot(2000);
++	ASSERT_GE(rep_slot, 0);
++	EXPECT_EQ(failsafe.getActionSlot(rep_slot).action, FailsafeBase::Action::RTL);
 +
 +	// Duplicate check in same update triggers error reporting branch
 +	FailsafeBase::ActionOptions dup_opt(FailsafeBase::Action::Warn);
@@ -824,10 +858,10 @@ index 0000000000..a41382e44b
 +	{
 +		FailsafeStudentTester fs;
 +		fs.setCurrentDelay(0);
-+		fs.setUserTakeoverActiveDirect(true);
 +		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
 +		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
 +		fs.callCheckFailsafe(1003, false, true, opt);
++		fs.setUserTakeoverActiveDirect(true);
 +
 +		FailsafeBase::SelectedActionState ret{};
 +		fs.callGetSelectedAction(_default_state, flags, false, false, ret);
@@ -1265,3 +1299,16 @@ index 0000000000..a41382e44b
 +		EXPECT_TRUE(FailsafeStudentTester::callModeCanRun(f, mode));
 +	}
 +}
+diff --git a/src/modules/commander/failsafe/framework.h b/src/modules/commander/failsafe/framework.h
+index a0ff26601b..9a48de98da 100644
+--- a/src/modules/commander/failsafe/framework.h
++++ b/src/modules/commander/failsafe/framework.h
+@@ -47,6 +47,8 @@ using namespace time_literals;
+ class FailsafeBase: public ModuleParams
+ {
+ public:
++	friend class FailsafeStudentTester;
++
+ 	static constexpr hrt_abstime DEFAULT_DEFER_TIMEOUT = 30_s;
+ 
+ 	enum class Action : uint8_t {

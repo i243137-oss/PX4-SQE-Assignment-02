@@ -15,6 +15,7 @@ __pycache__/
 
 # Whitelist repo files and required deliverable folders
 !.gitignore
+!.gitattributes
 !/README.md
 !/report/
 !/report/**

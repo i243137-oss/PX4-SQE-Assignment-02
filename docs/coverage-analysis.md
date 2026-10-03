@@ -66,15 +66,22 @@ For every statement or branch in `framework.cpp` that remains unexecuted, the in
 
 ---
 
-### Gap 4: Defensive Capacity Overflow with Equal/Lower Severity
-- **Source Location**: `framework.cpp:339-342`
+### Gap 4: Subclass Hook Default Implementation & Defensive Capacity Overflow Drop
+- **Source Location**: `framework.cpp:99-100` and `framework.cpp:339-342`
 - **Code**:
+  ```cpp
+  uint8_t FailsafeBase::modifyUserIntendedMode(Action previous_action, Action current_action, uint8_t user_intended_mode) const
+  {
+      return user_intended_mode;
+  }
+  ```
+  and
   ```cpp
   if (options.action > _actions[i].action) {
       free_idx = i;
   }
   ```
-- **Uncovered Logic**: Rejection branch when all 8 action slots are exhausted and an incoming 9th action has severity less than or equal to all active actions.
-- **Why Not Covered**: In standard operation, the number of simultaneous active distinct failures does not exceed 8. `TC-FS-16` tests the higher-severity replacement branch (`free_idx != -1`); the drop branch leaves `free_idx == -1` and safely ignores the action without side effects.
-- **Reachability**: Defensive capacity fallback.
-- **Justification**: Defensive boundary protecting fixed-size static allocation from buffer overflow.
+- **Uncovered Logic**: Default base implementation of `modifyUserIntendedMode` returning the input mode unchanged; and capacity rejection branch when all 8 action slots are exhausted and an incoming 9th action has severity less than or equal to active actions.
+- **Why Not Covered**: The default base method in `FailsafeBase` is a polymorphic hook overridden by vehicle-specific subclasses (e.g., fixed-wing vs multicopter); in base state machine testing, no modification is needed. In capacity exhaustion, `TC-FS-16` tests higher-severity replacement (`free_idx != -1`); the drop branch leaves `free_idx == -1` and safely ignores the action without side effects.
+- **Reachability**: Subclass hook fallback and defensive capacity fallback.
+- **Justification**: Clean polymorphic interface design and defensive boundary protecting fixed-size static allocation from buffer overflow.
