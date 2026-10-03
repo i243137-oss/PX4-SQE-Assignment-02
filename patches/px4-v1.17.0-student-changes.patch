@@ -12,10 +12,11 @@ index 0d7b3bd366..df4416641a 100644
 +)
 diff --git a/src/modules/commander/failsafe/failsafe_student_test.cpp b/src/modules/commander/failsafe/failsafe_student_test.cpp
 new file mode 100644
-index 0000000000..a49fb82f20
+index 0000000000..97b9964e57
 --- /dev/null
 +++ b/src/modules/commander/failsafe/failsafe_student_test.cpp
-@@ -0,0 +1,1283 @@
+@@ -0,0 +1,1296 @@
++
 +/****************************************************************************
 + *
 + *   Copyright (c) 2026 PX4 Development Team. All rights reserved.
@@ -69,6 +70,12 @@ index 0000000000..a49fb82f20
 +class FailsafeStudentTester : public FailsafeBase
 +{
 +public:
++	using FailsafeBase::ActionOptions;
++	using FailsafeBase::UserTakeoverAllowed;
++	using FailsafeBase::ClearCondition;
++	using FailsafeBase::SelectedActionState;
++	using FailsafeBase::Cause;
++
 +	FailsafeStudentTester(ModuleParams *parent = nullptr) : FailsafeBase(parent) {}
 +
 +	using StateCheckFn = std::function<void(FailsafeStudentTester *, const hrt_abstime &, const State &, const failsafe_flags_s &)>;
@@ -170,6 +177,12 @@ index 0000000000..a49fb82f20
 +	StateCheckFn _state_check_fn{nullptr};
 +	FallbackCheckFn _fallback_check_fn{nullptr};
 +};
++
++using ActionOptions = FailsafeStudentTester::ActionOptions;
++using UserTakeoverAllowed = FailsafeStudentTester::UserTakeoverAllowed;
++using ClearCondition = FailsafeStudentTester::ClearCondition;
++using SelectedActionState = FailsafeStudentTester::SelectedActionState;
++using Cause = FailsafeStudentTester::Cause;
 +
 +class FailsafeStudentTest : public ::testing::Test
 +{
@@ -282,9 +295,9 @@ index 0000000000..a49fb82f20
 +	bool active_failure = true;
 +
 +	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
-+		FailsafeBase::ActionOptions opts(FailsafeBase::Action::RTL);
-+		opts.clearOn(FailsafeBase::ClearCondition::OnModeChangeOrDisarm);
-+		opts.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		ActionOptions opts(FailsafeBase::Action::RTL);
++		opts.clearOn(ClearCondition::OnModeChangeOrDisarm);
++		opts.allowUserTakeover(UserTakeoverAllowed::Never);
 +		fs->callCheckFailsafe(caller_id, false, active_failure, opts);
 +	});
 +
@@ -325,8 +338,8 @@ index 0000000000..a49fb82f20
 +	bool active_failure = true;
 +
 +	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
-+		FailsafeBase::ActionOptions opts(FailsafeBase::Action::RTL);
-+		opts.clearOn(FailsafeBase::ClearCondition::OnModeChangeOrDisarm);
++		ActionOptions opts(FailsafeBase::Action::RTL);
++		opts.clearOn(ClearCondition::OnModeChangeOrDisarm);
 +		fs->callCheckFailsafe(caller_id, false, active_failure, opts);
 +	});
 +
@@ -369,8 +382,8 @@ index 0000000000..a49fb82f20
 +	const int caller_id = 103;
 +
 +	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
-+		FailsafeBase::ActionOptions opts(FailsafeBase::Action::Descend);
-+		opts.clearOn(FailsafeBase::ClearCondition::WhenConditionClears);
++		ActionOptions opts(FailsafeBase::Action::Descend);
++		opts.clearOn(ClearCondition::WhenConditionClears);
 +		fs->callCheckFailsafe(caller_id, false, true, opts);
 +	});
 +
@@ -422,8 +435,8 @@ index 0000000000..a49fb82f20
 +	failsafe.setOnNotifyUserCallback([](void *) { notify_count++; }, nullptr);
 +
 +	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
-+		FailsafeBase::ActionOptions opts(FailsafeBase::Action::Warn);
-+		opts.clearOn(FailsafeBase::ClearCondition::WhenConditionClears);
++		ActionOptions opts(FailsafeBase::Action::Warn);
++		opts.clearOn(ClearCondition::WhenConditionClears);
 +		fs->callCheckFailsafe(caller_id, false, true, opts);
 +	});
 +
@@ -493,7 +506,7 @@ index 0000000000..a49fb82f20
 +	FailsafeStudentTester failsafe;
 +	const int caller_id = 201;
 +
-+	FailsafeBase::ActionOptions opt1(FailsafeBase::Action::Hold);
++	ActionOptions opt1(FailsafeBase::Action::Hold);
 +	bool r1 = failsafe.callCheckFailsafe(caller_id, false, true, opt1);
 +	EXPECT_TRUE(r1);
 +	int slot = failsafe.findActionSlot(caller_id);
@@ -503,7 +516,7 @@ index 0000000000..a49fb82f20
 +	EXPECT_EQ(failsafe.countValidActionSlots(), 1);
 +
 +	// Update existing caller with different action
-+	FailsafeBase::ActionOptions opt2(FailsafeBase::Action::RTL);
++	ActionOptions opt2(FailsafeBase::Action::RTL);
 +	bool r2 = failsafe.callCheckFailsafe(caller_id, true, true, opt2);
 +	EXPECT_TRUE(r2);
 +	int slot2 = failsafe.findActionSlot(caller_id);
@@ -522,12 +535,12 @@ index 0000000000..a49fb82f20
 +	// COM_FAIL_ACT_T > 0.1f -> Always policy, delay starts
 +	{
 +		FailsafeStudentTester failsafe;
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Auto);
++		ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.allowUserTakeover(UserTakeoverAllowed::Auto);
 +		failsafe.callCheckFailsafe(301, false, true, opt);
 +		int slot = failsafe.findActionSlot(301);
 +		ASSERT_GE(slot, 0);
-+		EXPECT_EQ(failsafe.getActionSlot(slot).allow_user_takeover, FailsafeBase::UserTakeoverAllowed::Always);
++		EXPECT_EQ(failsafe.getActionSlot(slot).allow_user_takeover, UserTakeoverAllowed::Always);
 +		EXPECT_GT(failsafe.getCurrentDelay(), 0_s);
 +	}
 +
@@ -539,12 +552,12 @@ index 0000000000..a49fb82f20
 +
 +		FailsafeStudentTester failsafe;
 +		failsafe.setCurrentDelay(0);
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Auto);
++		ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.allowUserTakeover(UserTakeoverAllowed::Auto);
 +		failsafe.callCheckFailsafe(302, false, true, opt);
 +		int slot = failsafe.findActionSlot(302);
 +		ASSERT_GE(slot, 0);
-+		EXPECT_EQ(failsafe.getActionSlot(slot).allow_user_takeover, FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		EXPECT_EQ(failsafe.getActionSlot(slot).allow_user_takeover, UserTakeoverAllowed::AlwaysModeSwitchOnly);
 +		EXPECT_EQ(failsafe.getCurrentDelay(), 0_s);
 +
 +		// Reset param back to 5.0f
@@ -556,8 +569,8 @@ index 0000000000..a49fb82f20
 +	{
 +		FailsafeStudentTester failsafe;
 +		failsafe.setCurrentDelay(0);
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Warn);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Auto);
++		ActionOptions opt(FailsafeBase::Action::Warn);
++		opt.allowUserTakeover(UserTakeoverAllowed::Auto);
 +		failsafe.callCheckFailsafe(303, false, true, opt);
 +		EXPECT_EQ(failsafe.getCurrentDelay(), 0_s);
 +	}
@@ -574,15 +587,15 @@ index 0000000000..a49fb82f20
 +
 +	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
 +		// Action 1: Lower severity, permissive takeover
-+		FailsafeBase::ActionOptions opt1(FailsafeBase::Action::Hold);
-+		opt1.causedBy(FailsafeBase::Cause::Generic);
-+		opt1.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		ActionOptions opt1(FailsafeBase::Action::Hold);
++		opt1.causedBy(Cause::Generic);
++		opt1.allowUserTakeover(UserTakeoverAllowed::Always);
 +		fs->callCheckFailsafe(401, false, true, opt1);
 +
 +		// Action 2: Higher severity, restrictive takeover
-+		FailsafeBase::ActionOptions opt2(FailsafeBase::Action::RTL);
-+		opt2.causedBy(FailsafeBase::Cause::BatteryLow);
-+		opt2.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		ActionOptions opt2(FailsafeBase::Action::RTL);
++		opt2.causedBy(Cause::BatteryLow);
++		opt2.allowUserTakeover(UserTakeoverAllowed::Never);
 +		fs->callCheckFailsafe(402, false, true, opt2);
 +	});
 +
@@ -603,8 +616,8 @@ index 0000000000..a49fb82f20
 +TEST_F(FailsafeStudentTest, TC_FS_13_ImmediateRemovalPolicy)
 +{
 +	FailsafeStudentTester failsafe;
-+	FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+	opt.clearOn(FailsafeBase::ClearCondition::WhenConditionClears);
++	ActionOptions opt(FailsafeBase::Action::Descend);
++	opt.clearOn(ClearCondition::WhenConditionClears);
 +	opt.id = 501;
 +	opt.state_failure = true;
 +
@@ -621,8 +634,8 @@ index 0000000000..a49fb82f20
 +	FailsafeStudentTester failsafe;
 +
 +	// OnModeChangeOrDisarm: retained with state_failure = false when not deferring
-+	FailsafeBase::ActionOptions opt1(FailsafeBase::Action::RTL);
-+	opt1.clearOn(FailsafeBase::ClearCondition::OnModeChangeOrDisarm);
++	ActionOptions opt1(FailsafeBase::Action::RTL);
++	opt1.clearOn(ClearCondition::OnModeChangeOrDisarm);
 +	opt1.id = 502;
 +	opt1.state_failure = true;
 +	failsafe.callRemoveAction(opt1);
@@ -630,8 +643,8 @@ index 0000000000..a49fb82f20
 +	EXPECT_FALSE(opt1.state_failure);
 +
 +	// Never: retained with state_failure = false
-+	FailsafeBase::ActionOptions opt2(FailsafeBase::Action::RTL);
-+	opt2.clearOn(FailsafeBase::ClearCondition::Never);
++	ActionOptions opt2(FailsafeBase::Action::RTL);
++	opt2.clearOn(ClearCondition::Never);
 +	opt2.id = 503;
 +	opt2.state_failure = true;
 +	failsafe.callRemoveAction(opt2);
@@ -640,8 +653,8 @@ index 0000000000..a49fb82f20
 +
 +	// While deferring, deferrable action is removed immediately despite retained condition
 +	failsafe.deferFailsafes(true, 10);
-+	FailsafeBase::ActionOptions opt3(FailsafeBase::Action::RTL);
-+	opt3.clearOn(FailsafeBase::ClearCondition::OnModeChangeOrDisarm);
++	ActionOptions opt3(FailsafeBase::Action::RTL);
++	opt3.clearOn(ClearCondition::OnModeChangeOrDisarm);
 +	opt3.can_be_deferred = true;
 +	opt3.id = 504;
 +	opt3.state_failure = true;
@@ -662,8 +675,8 @@ index 0000000000..a49fb82f20
 +
 +	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
 +		if (include_check) {
-+			FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+			opt.clearOn(FailsafeBase::ClearCondition::WhenConditionClears);
++			ActionOptions opt(FailsafeBase::Action::Descend);
++			opt.clearOn(ClearCondition::WhenConditionClears);
 +			fs->callCheckFailsafe(caller_id, false, true, opt);
 +		}
 +	});
@@ -688,19 +701,19 @@ index 0000000000..a49fb82f20
 +
 +	// Fill all 8 action slots with Warn
 +	for (int i = 0; i < 8; ++i) {
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Warn);
++		ActionOptions opt(FailsafeBase::Action::Warn);
 +		failsafe.callCheckFailsafe(1000 + i, false, true, opt);
 +	}
 +
 +	// 9th caller with higher severity (RTL > Warn) triggers severity replacement
-+	FailsafeBase::ActionOptions higher_opt(FailsafeBase::Action::RTL);
++	ActionOptions higher_opt(FailsafeBase::Action::RTL);
 +	failsafe.callCheckFailsafe(2000, false, true, higher_opt);
 +	int rep_slot = failsafe.findActionSlot(2000);
 +	ASSERT_GE(rep_slot, 0);
 +	EXPECT_EQ(failsafe.getActionSlot(rep_slot).action, FailsafeBase::Action::RTL);
 +
 +	// Duplicate check in same update triggers error reporting branch
-+	FailsafeBase::ActionOptions dup_opt(FailsafeBase::Action::Warn);
++	ActionOptions dup_opt(FailsafeBase::Action::Warn);
 +	failsafe.callCheckFailsafe(1000, false, true, dup_opt);
 +}
 +
@@ -735,7 +748,7 @@ index 0000000000..a49fb82f20
 +	failsafe_flags_s flags{};
 +
 +	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++		ActionOptions opt(FailsafeBase::Action::RTL);
 +		fs->callCheckFailsafe(701, false, true, opt);
 +	});
 +
@@ -757,7 +770,7 @@ index 0000000000..a49fb82f20
 +
 +	// Deferrable RTL is suppressed
 +	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++		ActionOptions opt(FailsafeBase::Action::RTL);
 +		opt.can_be_deferred = true;
 +		fs->callCheckFailsafe(801, false, true, opt);
 +	});
@@ -767,7 +780,7 @@ index 0000000000..a49fb82f20
 +
 +	// Non-deferrable Terminate bypasses suppression
 +	failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Terminate);
++		ActionOptions opt(FailsafeBase::Action::Terminate);
 +		opt.cannotBeDeferred();
 +		fs->callCheckFailsafe(802, false, true, opt);
 +	});
@@ -787,7 +800,7 @@ index 0000000000..a49fb82f20
 +	{
 +		FailsafeStudentTester failsafe;
 +		failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
-+			FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
++			ActionOptions opt(FailsafeBase::Action::RTL);
 +			fs->callCheckFailsafe(901, false, true, opt);
 +		});
 +		failsafe.update(1_s, _default_state, false, false, flags);
@@ -798,7 +811,7 @@ index 0000000000..a49fb82f20
 +	{
 +		FailsafeStudentTester failsafe;
 +		failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
-+			FailsafeBase::ActionOptions opt(FailsafeBase::Action::Disarm);
++			ActionOptions opt(FailsafeBase::Action::Disarm);
 +			fs->callCheckFailsafe(902, false, true, opt);
 +		});
 +		failsafe.update(1_s, _default_state, false, false, flags);
@@ -809,7 +822,7 @@ index 0000000000..a49fb82f20
 +	{
 +		FailsafeStudentTester failsafe;
 +		failsafe.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
-+			FailsafeBase::ActionOptions opt(FailsafeBase::Action::Terminate);
++			ActionOptions opt(FailsafeBase::Action::Terminate);
 +			fs->callCheckFailsafe(903, false, true, opt);
 +		});
 +		failsafe.update(1_s, _default_state, false, false, flags);
@@ -829,11 +842,11 @@ index 0000000000..a49fb82f20
 +	{
 +		FailsafeStudentTester fs;
 +		fs.setCurrentDelay(0);
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(UserTakeoverAllowed::Always);
 +		fs.callCheckFailsafe(1001, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		fs.callGetSelectedAction(_default_state, flags, false, true, ret);
 +		EXPECT_TRUE(ret.user_takeover);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
@@ -844,11 +857,11 @@ index 0000000000..a49fb82f20
 +	{
 +		FailsafeStudentTester fs;
 +		fs.setCurrentDelay(0);
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(UserTakeoverAllowed::Always);
 +		fs.callCheckFailsafe(1002, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		fs.callGetSelectedAction(_default_state, flags, false, false, ret);
 +		EXPECT_FALSE(ret.user_takeover);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::Descend);
@@ -858,12 +871,12 @@ index 0000000000..a49fb82f20
 +	{
 +		FailsafeStudentTester fs;
 +		fs.setCurrentDelay(0);
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(UserTakeoverAllowed::Always);
 +		fs.callCheckFailsafe(1003, false, true, opt);
 +		fs.setUserTakeoverActiveDirect(true);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		fs.callGetSelectedAction(_default_state, flags, false, false, ret);
 +		EXPECT_TRUE(ret.user_takeover);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
@@ -873,11 +886,11 @@ index 0000000000..a49fb82f20
 +	{
 +		FailsafeStudentTester fs;
 +		fs.setCurrentDelay(0);
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(UserTakeoverAllowed::Never);
 +		fs.callCheckFailsafe(1004, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		fs.callGetSelectedAction(_default_state, flags, false, true, ret);
 +		EXPECT_FALSE(ret.user_takeover);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::Descend);
@@ -888,11 +901,11 @@ index 0000000000..a49fb82f20
 +		FailsafeStudentTester fs;
 +		fs.setCurrentDelay(0);
 +		fs.setSelectedActionDirect(FailsafeBase::Action::Descend); // G = true (_selected_action > Warn)
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(UserTakeoverAllowed::AlwaysModeSwitchOnly);
 +		fs.callCheckFailsafe(1005, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		// user_intended_mode_updated = true (F = true) -> E = F && G = true
 +		fs.callGetSelectedAction(_default_state, flags, true, false, ret);
 +		EXPECT_TRUE(ret.user_takeover);
@@ -904,11 +917,11 @@ index 0000000000..a49fb82f20
 +		FailsafeStudentTester fs;
 +		fs.setCurrentDelay(0);
 +		fs.setSelectedActionDirect(FailsafeBase::Action::Descend); // G = true
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(UserTakeoverAllowed::Never);
 +		fs.callCheckFailsafe(1006, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		fs.callGetSelectedAction(_default_state, flags, true, false, ret);
 +		EXPECT_FALSE(ret.user_takeover);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::Descend);
@@ -919,11 +932,11 @@ index 0000000000..a49fb82f20
 +		FailsafeStudentTester fs;
 +		fs.setCurrentDelay(0);
 +		fs.setSelectedActionDirect(FailsafeBase::Action::Descend);
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(UserTakeoverAllowed::AlwaysModeSwitchOnly);
 +		fs.callCheckFailsafe(1007, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		fs.callGetSelectedAction(_default_state, flags, false, true, ret); // stick true, but mode not updated
 +		EXPECT_FALSE(ret.user_takeover);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::Descend);
@@ -936,11 +949,11 @@ index 0000000000..a49fb82f20
 +		FailsafeStudentTester fs;
 +		fs.setCurrentDelay(0);
 +		fs.setSelectedActionDirect(FailsafeBase::Action::Warn); // G = false
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(UserTakeoverAllowed::AlwaysModeSwitchOnly);
 +		fs.callCheckFailsafe(1009, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		fs.callGetSelectedAction(_default_state, flags, true, false, ret);
 +		EXPECT_FALSE(ret.user_takeover);
 +	}
@@ -950,11 +963,11 @@ index 0000000000..a49fb82f20
 +		FailsafeStudentTester fs;
 +		fs.setCurrentDelay(0);
 +		fs.setSelectedActionDirect(FailsafeBase::Action::Descend); // G = true
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Descend);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::AlwaysModeSwitchOnly);
++		ActionOptions opt(FailsafeBase::Action::Descend);
++		opt.allowUserTakeover(UserTakeoverAllowed::AlwaysModeSwitchOnly);
 +		fs.callCheckFailsafe(1010, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		fs.callGetSelectedAction(_default_state, flags, false, false, ret); // F = false
 +		EXPECT_FALSE(ret.user_takeover);
 +	}
@@ -976,11 +989,11 @@ index 0000000000..a49fb82f20
 +			return FailsafeBase::Action::FallbackAltCtrl;
 +		});
 +
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Hold);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		ActionOptions opt(FailsafeBase::Action::Hold);
++		opt.allowUserTakeover(UserTakeoverAllowed::Always);
 +		failsafe.callCheckFailsafe(1101, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		failsafe.callGetSelectedAction(_default_state, flags, false, true, ret);
 +		EXPECT_TRUE(ret.user_takeover);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::FallbackAltCtrl);
@@ -994,11 +1007,11 @@ index 0000000000..a49fb82f20
 +			return FailsafeBase::Action::Warn;
 +		});
 +
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Hold);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Always);
++		ActionOptions opt(FailsafeBase::Action::Hold);
++		opt.allowUserTakeover(UserTakeoverAllowed::Always);
 +		failsafe.callCheckFailsafe(1102, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		failsafe.callGetSelectedAction(_default_state, flags, false, true, ret);
 +		EXPECT_TRUE(ret.user_takeover);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
@@ -1027,15 +1040,15 @@ index 0000000000..a49fb82f20
 +
 +	FailsafeStudentTester failsafe;
 +	failsafe.setCurrentDelay(0);
-+	FailsafeBase::ActionOptions opt(FailsafeBase::Action::FallbackPosCtrl);
++	ActionOptions opt(FailsafeBase::Action::FallbackPosCtrl);
 +	failsafe.callCheckFailsafe(1201, false, true, opt);
 +
-+	FailsafeBase::SelectedActionState ret{};
++	SelectedActionState ret{};
 +	failsafe.callGetSelectedAction(_default_state, flags, false, false, ret);
 +
 +	// All modes rejected by modeCanRun -> falls through switch all the way to Terminate
 +	EXPECT_EQ(ret.action, FailsafeBase::Action::Terminate);
-+	EXPECT_EQ(ret.cause, FailsafeBase::Cause::Generic);
++	EXPECT_EQ(ret.cause, Cause::Generic);
 +}
 +
 +// ============================================================================
@@ -1053,11 +1066,11 @@ index 0000000000..a49fb82f20
 +		FailsafeBase::State state = _default_state;
 +		state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND;
 +
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.allowUserTakeover(UserTakeoverAllowed::Never);
 +		failsafe.callCheckFailsafe(1301, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		failsafe.callGetSelectedAction(state, flags, false, false, ret);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
 +		EXPECT_EQ(ret.delayed_action, FailsafeBase::Action::None);
@@ -1074,11 +1087,11 @@ index 0000000000..a49fb82f20
 +		unavail_flags.attitude_invalid = true;
 +		unavail_flags.mode_req_attitude = (1u << vehicle_status_s::NAVIGATION_STATE_AUTO_LAND);
 +
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.allowUserTakeover(UserTakeoverAllowed::Never);
 +		failsafe.callCheckFailsafe(1302, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		failsafe.callGetSelectedAction(state, unavail_flags, false, false, ret);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::RTL);
 +	}
@@ -1099,11 +1112,11 @@ index 0000000000..a49fb82f20
 +		FailsafeBase::State state = _default_state;
 +		state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_AUTO_RTL;
 +
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::RTL);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		ActionOptions opt(FailsafeBase::Action::RTL);
++		opt.allowUserTakeover(UserTakeoverAllowed::Never);
 +		failsafe.callCheckFailsafe(1401, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		failsafe.callGetSelectedAction(state, flags, false, false, ret);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
 +	}
@@ -1115,11 +1128,11 @@ index 0000000000..a49fb82f20
 +		FailsafeBase::State state = _default_state;
 +		state.user_intended_mode = vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND;
 +
-+		FailsafeBase::ActionOptions opt(FailsafeBase::Action::Land);
-+		opt.allowUserTakeover(FailsafeBase::UserTakeoverAllowed::Never);
++		ActionOptions opt(FailsafeBase::Action::Land);
++		opt.allowUserTakeover(UserTakeoverAllowed::Never);
 +		failsafe.callCheckFailsafe(1402, false, true, opt);
 +
-+		FailsafeBase::SelectedActionState ret{};
++		SelectedActionState ret{};
 +		failsafe.callGetSelectedAction(state, flags, false, false, ret);
 +		EXPECT_EQ(ret.action, FailsafeBase::Action::Warn);
 +	}
