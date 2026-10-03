@@ -7,8 +7,11 @@ Registration: px4_add_functional_gtest(SRC failsafe_student_test.cpp LINKLIBS fa
 Executable: build/px4_sitl_test/functional-failsafe_student_test
 
 Command:
-make tests TESTFILTER=failsafe_student_test
+./build/px4_sitl_test/functional-failsafe_student_test
 
+ERROR [px4_work_queue] not running
+ERROR [px4_work_queue] wq:lp_default not available
+ERROR [px4_work_queue] init failed
 [==========] Running 27 tests from 1 test suite.
 [----------] Global test environment set-up.
 [----------] 27 tests from FailsafeStudentTest
@@ -19,10 +22,15 @@ make tests TESTFILTER=failsafe_student_test
 [ RUN      ] FailsafeStudentTest.TC_FS_03_UpdateTimingInitializationAndCommit
 [       OK ] FailsafeStudentTest.TC_FS_03_UpdateTimingInitializationAndCommit (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_04_ArmingDisarmingTransitionCleanup
+WARN  [failsafe] Failsafe activated
 [       OK ] FailsafeStudentTest.TC_FS_04_ArmingDisarmingTransitionCleanup (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_05_ModeChangeCleanup
+WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds
+WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds
 [       OK ] FailsafeStudentTest.TC_FS_05_ModeChangeCleanup (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_06_FiniteAndInfiniteDeferralTiming
+WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds
+WARN  [failsafe] Failsafe activated
 [       OK ] FailsafeStudentTest.TC_FS_06_FiniteAndInfiniteDeferralTiming (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_07_NotificationCallbackAndReset
 [       OK ] FailsafeStudentTest.TC_FS_07_NotificationCallbackAndReset (0 ms)
@@ -31,26 +39,36 @@ make tests TESTFILTER=failsafe_student_test
 [ RUN      ] FailsafeStudentTest.TC_FS_09_UpdateDelayBoundaries
 [       OK ] FailsafeStudentTest.TC_FS_09_UpdateDelayBoundaries (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_10_ExistingCallerUpdate
+ERROR [failsafe] BUG: duplicate check for caller_id 201
 [       OK ] FailsafeStudentTest.TC_FS_10_ExistingCallerUpdate (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_11_AutoTakeoverThresholds
 [       OK ] FailsafeStudentTest.TC_FS_11_AutoTakeoverThresholds (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_12_SeverityAndPolicyPrecedence
+WARN  [failsafe] Failsafe activated
 [       OK ] FailsafeStudentTest.TC_FS_12_SeverityAndPolicyPrecedence (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_13_ImmediateRemovalPolicy
 [       OK ] FailsafeStudentTest.TC_FS_13_ImmediateRemovalPolicy (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_14_RetainedClearConditionAndDeferralOverride
 [       OK ] FailsafeStudentTest.TC_FS_14_RetainedClearConditionAndDeferralOverride (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_15_RemoveNonActivatedActions
+WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds
 [       OK ] FailsafeStudentTest.TC_FS_15_RemoveNonActivatedActions (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_16_DefensiveCapacityAndDuplicateCaller
+ERROR [failsafe] No free failsafe action idx
+ERROR [failsafe] No free failsafe action idx
 [       OK ] FailsafeStudentTest.TC_FS_16_DefensiveCapacityAndDuplicateCaller (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_17_StickyTermination
+WARN  [failsafe] Failsafe activated
 [       OK ] FailsafeStudentTest.TC_FS_17_StickyTermination (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_18_DisarmedImmediateNone
 [       OK ] FailsafeStudentTest.TC_FS_18_DisarmedImmediateNone (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_19_DeferrableVsNonDeferrableActions
+WARN  [failsafe] Failsafe activated
 [       OK ] FailsafeStudentTest.TC_FS_19_DeferrableVsNonDeferrableActions (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_20_DelayedHoldEligibility
+WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds
+WARN  [failsafe] Failsafe activated
+WARN  [failsafe] Failsafe activated
 [       OK ] FailsafeStudentTest.TC_FS_20_DelayedHoldEligibility (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_21_TakeoverPolicyMatrixAndMCDC
 [       OK ] FailsafeStudentTest.TC_FS_21_TakeoverPolicyMatrixAndMCDC (0 ms)
@@ -66,8 +84,8 @@ make tests TESTFILTER=failsafe_student_test
 [       OK ] FailsafeStudentTest.TC_FS_26_DelayClearingCauses (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_27_ModeCanRunRequirementMaskTruthCases
 [       OK ] FailsafeStudentTest.TC_FS_27_ModeCanRunRequirementMaskTruthCases (0 ms)
-[----------] 27 tests from FailsafeStudentTest (35 ms total)
+[----------] 27 tests from FailsafeStudentTest (3 ms total)
 
 [----------] Global test environment tear-down
-[==========] 27 tests from 1 test suite ran. (35 ms total)
+[==========] 27 tests from 1 test suite ran. (3 ms total)
 [  PASSED  ] 27 tests.
