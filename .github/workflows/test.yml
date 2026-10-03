@@ -46,7 +46,7 @@ jobs:
       - name: Execute Failsafe Student Test Suite
         run: |
           cd PX4-Autopilot
-          ./build/px4_sitl_test/functional-failsafe_student_test
+          ./build/px4_sitl_test/functional-failsafe_student_test 2>&1 | tee test_execution_ci.log
 
       - name: Generate Job Summary
         if: always()
@@ -76,4 +76,32 @@ jobs:
           - **TC-FS-21**: **MC/DC Compound Pilot Takeover Decision Matrix (10/10 vectors)**
           - **TC-FS-22 to TC-FS-25**: Mode fallback cascade, redundant UX guards
           - **TC-FS-26 to TC-FS-27**: Delay clearing conditions, mode requirement bitmasks
+
+          ---
+
+          ### 📦 Downloadable Run Artifacts
+          You can download the verified test run artifacts from the **Artifacts** section at the bottom of this summary page:
+          1. **\`failsafe-student-test-evidence\`**: Contains the live CI test run log, the standalone patch (\`px4-v1.17.0-student-changes.patch\`), Part 3 report, and coverage analysis documentation.
+          2. **\`functional-failsafe_student_test-binary\`**: The pre-compiled standalone test binary built on Linux x86_64.
           EOF
+
+      - name: Upload Test Evidence Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failsafe-student-test-evidence
+          path: |
+            PX4-Autopilot/test_execution_ci.log
+            patches/px4-v1.17.0-student-changes.patch
+            evidence/tests/student_test_run.log
+            report/part3.md
+            docs/coverage-analysis.md
+          retention-days: 30
+
+      - name: Upload Compiled Test Binary
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: functional-failsafe_student_test-binary
+          path: PX4-Autopilot/build/px4_sitl_test/functional-failsafe_student_test
+          retention-days: 14

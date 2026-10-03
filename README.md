@@ -131,6 +131,20 @@ git apply --check ../patches/px4-v1.17.0-student-changes.patch
 
 ---
 
+## 📦 Downloadable CI Artifacts
+
+Every run of the [GitHub Actions CI Workflow](https://github.com/i243137-oss/PX4-SQE-Assignment-02/actions/workflows/test.yml) produces downloadable artifacts available at the bottom of the workflow run summary page:
+
+1. **`failsafe-student-test-evidence`**: Contains the live test execution log (`test_execution_ci.log`), the clean student patch (`px4-v1.17.0-student-changes.patch`), verified test log, Part 3 report, and coverage analysis.
+2. **`functional-failsafe_student_test-binary`**: The compiled Linux x86_64 GTest executable binary, which can be run standalone to verify all 27 tests pass.
+
+To download:
+1. Navigate to **Actions** $\rightarrow$ select the latest workflow run.
+2. Scroll to the **Artifacts** table at the bottom of the page.
+3. Click on any artifact to download its ZIP archive.
+
+---
+
 ## 👥 Student Team Responsibilities
 
 - **Student 1 (i243164)**: Architecture analysis, scope selection, control flow analysis, and test design.
