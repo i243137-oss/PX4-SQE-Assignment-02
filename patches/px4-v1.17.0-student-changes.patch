@@ -12,10 +12,10 @@ index 0d7b3bd366..df4416641a 100644
 +)
 diff --git a/src/modules/commander/failsafe/failsafe_student_test.cpp b/src/modules/commander/failsafe/failsafe_student_test.cpp
 new file mode 100644
-index 0000000000..97b9964e57
+index 0000000000..0db877ebc6
 --- /dev/null
 +++ b/src/modules/commander/failsafe/failsafe_student_test.cpp
-@@ -0,0 +1,1296 @@
+@@ -0,0 +1,1302 @@
 +
 +/****************************************************************************
 + *
@@ -411,13 +411,19 @@ index 0000000000..97b9964e57
 +	failsafe.update(past_t + 6_s, _default_state, false, false, flags);
 +	EXPECT_EQ(failsafe.selectedAction(), FailsafeBase::Action::Descend);
 +
-+	// Infinite timeout (-1): never clears automatically
-+	EXPECT_TRUE(failsafe.deferFailsafes(true, -1));
++	// Infinite timeout (-1): never clears automatically (tested on fresh instance where no action is active)
++	FailsafeStudentTester failsafe_inf;
++	failsafe_inf.setStateCheckCallback([&](FailsafeStudentTester *fs, const hrt_abstime &, const FailsafeBase::State &, const failsafe_flags_s &) {
++		ActionOptions opts(FailsafeBase::Action::Descend);
++		opts.clearOn(ClearCondition::WhenConditionClears);
++		fs->callCheckFailsafe(caller_id, false, true, opts);
++	});
++	EXPECT_TRUE(failsafe_inf.deferFailsafes(true, -1));
 +	hrt_abstime inf_t = 30_s;
-+	failsafe.update(inf_t, _default_state, false, false, flags);
-+	EXPECT_TRUE(failsafe.failsafeDeferred());
-+	failsafe.update(inf_t + 100_s, _default_state, false, false, flags);
-+	EXPECT_TRUE(failsafe.getDeferFailsafes());
++	failsafe_inf.update(inf_t, _default_state, false, false, flags);
++	EXPECT_TRUE(failsafe_inf.failsafeDeferred());
++	failsafe_inf.update(inf_t + 100_s, _default_state, false, false, flags);
++	EXPECT_TRUE(failsafe_inf.getDeferFailsafes());
 +}
 +
 +// ============================================================================
