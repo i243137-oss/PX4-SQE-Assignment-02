@@ -1,0 +1,48 @@
+name: Student 2 Structural Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  failsafe-tests:
+    name: Execute Student Tests (TC-FS-01 to TC-FS-27)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout Assignment Repository
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build python3-pip
+          pip3 install --user --break-system-packages kconfiglib jinja2 empy==3.3.4 jsonschema pyros-genmsg pyyaml
+
+      - name: Clone PX4 Autopilot v1.17.0
+        run: |
+          git clone --branch v1.17.0 --depth 1 --recurse-submodules --shallow-submodules https://github.com/PX4/PX4-Autopilot.git
+
+      - name: Apply Student Changes Patch
+        run: |
+          cd PX4-Autopilot
+          git apply ../patches/px4-v1.17.0-student-changes.patch
+          git status --short
+
+      - name: Configure PX4 SITL Test Target
+        run: |
+          cd PX4-Autopilot
+          cmake -B build/px4_sitl_test -GNinja -DCONFIG=px4_sitl_test
+
+      - name: Build Student Test Binary
+        run: |
+          cd PX4-Autopilot
+          ninja -C build/px4_sitl_test -j2 functional-failsafe_student_test
+
+      - name: Execute Failsafe Student Test Suite
+        run: |
+          cd PX4-Autopilot
+          ./build/px4_sitl_test/functional-failsafe_student_test
