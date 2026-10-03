@@ -100,6 +100,7 @@ jobs:
             PX4-Autopilot/test_execution_ci.log
             patches/px4-v1.17.0-student-changes.patch
             evidence/tests/student_test_run.log
+            evidence/coverage/final/failsafe_student_scope.info
             evidence/coverage/final/failsafe_student_branch.info
             report/part3.md
             docs/coverage-analysis.md
