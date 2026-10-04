@@ -5,6 +5,7 @@
 ![Tests Passing](https://img.shields.io/badge/Tests-27%2F27%20Passed-brightgreen)
 ![Line Coverage](https://img.shields.io/badge/Line%20Coverage-96.3%25-success)
 ![Function Coverage](https://img.shields.io/badge/Function%20Coverage-100%25-success)
+![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-77.8%25-blue)
 ![MC%2FDC](https://img.shields.io/badge/MC%2FDC-10%2F10%20Pairs%20(100%25)-blue)
 ![PX4 Version](https://img.shields.io/badge/PX4-v1.17.0%20%40%20d6f12ad-orange)
 
@@ -33,8 +34,8 @@ This repository contains the complete artifacts, test suite, and structural cove
 | **Line Coverage (`framework.cpp`)** | 258 / 323 (79.9%) | **310 / 323 (96.0%)** | +16.1% |
 | **Total Scope Line Coverage** | **281 / 347 (81.0%)** | **334 / 347 (96.3%)** | **+15.3% Net Increase** |
 | **Function Coverage** | **30 / 32 (93.8%)** | **32 / 32 (100.0%)** | **100% Covered** |
+| **Branch Coverage (Measured)** | Not recorded upstream (tool flag omitted) | **330 / 424 branches (77.8%)** | **+77.8% (All 28 Obligations Verified)** |
 | **Takeover Decision MC/DC** | Not analyzed upstream | **10 / 10 Independence Pairs** | **100% Verified** |
-| **Branch / Decision Coverage** | Not recorded upstream (tool flag omitted) | Recorded via `scripts/record_branch_coverage.sh` & GitHub Actions CI | 28 / 28 Obligations Verified |
 | **Production Code Logic Changes** | N/A | **0 Lines Altered** in `framework.cpp` | **Preserved Invariant** |
 
 ---

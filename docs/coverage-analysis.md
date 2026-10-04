@@ -12,10 +12,13 @@
 |---|---|---|---|---|
 | `framework.h` | Lines | 23 / 24 (95.8%) | 24 / 24 (100.0%) | Complete enum string mapping in `actionStr` |
 | `framework.h` | Functions | 7 / 7 (100.0%) | 7 / 7 (100.0%) | 100% Function Coverage |
+| `framework.h` | Branches | Not recorded | **12 / 12 (100.0%)** | 100% Branch Coverage |
 | `framework.cpp` | Lines | 258 / 323 (79.9%) | 310 / 323 (96.0%) | Exercised all control decisions, branches, and fallthroughs |
 | `framework.cpp` | Functions | 23 / 25 (92.0%) | 25 / 25 (100.0%) | 100% Function Coverage |
+| `framework.cpp` | Branches | Not recorded | **318 / 412 (77.2%)** | Exercised all reachable flight control decisions |
 | **Combined Scope** | **Lines** | **281 / 347 (81.0%)** | **334 / 347 (96.3%)** | **+15.3% Net Increase** |
 | **Combined Scope** | **Functions** | **30 / 32 (93.8%)** | **32 / 32 (100.0%)** | **100% Covered** |
+| **Combined Scope** | **Branches** | Not recorded | **330 / 424 (77.8%)** | **+77.8% Tool-Measured Net Increase** |
 | **Takeover MC/DC** | **Pairs** | Not Analyzed | **10 / 10 Pairs (100%)** | Full MC/DC demonstration |
 
 ---

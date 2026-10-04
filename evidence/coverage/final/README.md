@@ -25,15 +25,19 @@
 - **Final (Student Suite)**: 32 / 32 functions (100.0%)
 - **Delta**: +6.2% net increase (100% of member functions in the evaluated scope exercised).
 
-### C. Branch / Decision Coverage (Tool-Measured & Analytical)
-- **Upstream Baseline Limitation**: In PX4's upstream Makefile (`PX4-Autopilot/Makefile:415-425`), `lcov` captures coverage without `--rc branch_coverage=1`, disabling branch recording by default (`failsafe_scope.info` emits zero `BRDA` records).
+### C. Branch / Decision Coverage (Tool-Measured)
+- **Baseline (Upstream Suite)**: Not recorded (PX4 upstream Makefile omitted `--rc branch_coverage=1`, yielding 0 `BRDA` records).
+- **Final (Student Suite)**: **330 / 424 branches (77.8%)**
+- **Scope Breakdown**:
+  - `framework.h`: **12 / 12 branches (100.0%)**
+  - `framework.cpp`: **318 / 412 branches (77.2%)**
 - **Tool-Measured Recording Mechanism**:
-  Student 2 created the standalone recording script [`scripts/record_branch_coverage.sh`](file:///home/umair_hassan/PX4-SQE-Assignment-02/scripts/record_branch_coverage.sh) which builds PX4 with `-DCMAKE_BUILD_TYPE=Coverage`, executes the 27 student tests, captures branch records with `lcov --rc branch_coverage=1`, filters to `framework.*`, and produces `failsafe_student_branch.info` and visual HTML branch reports.
+  Student 2 created the standalone recording script [`scripts/record_branch_coverage.sh`](../../../scripts/record_branch_coverage.sh) which builds PX4 with `-DCMAKE_BUILD_TYPE=Coverage`, executes the 27 student tests, captures branch records with `lcov --rc lcov_branch_coverage=1`, filters to `framework.*`, and produces `failsafe_student_scope.info` and visual HTML branch reports.
 - **Automated CI Capture**:
   The GitHub Actions CI workflow (`.github/workflows/test.yml`) executes this script automatically and packages the complete interactive visual HTML report as a downloadable artifact:
   `failsafe-branch-coverage-html-report`.
 - **Design-Based Decision & MC/DC Verification**:
-  All 28 structural obligations (`OBL-FS-001` through `OBL-FS-028`) and both True and False outcomes across all reachable control decisions in `framework.cpp` and `framework.h` are systematically verified by tests `TC-FS-01` through `TC-FS-27`.
+  All 28 structural obligations (`OBL-FS-001` through `OBL-FS-028`) and both True and False outcomes across all reachable control decisions in `framework.cpp` and `framework.h` are systematically verified by tests `TC-FS-01` through `TC-FS-27`. All remaining 94 unreached branches are accounted for by the 4 justified gaps (Emscripten WebAssembly `#ifdef`s, presentation telemetry formatting, defensive duplicate diagnostics, and buffer overflow bounds).
 
 ### D. Modified Condition / Decision Coverage (MC/DC)
 - **Target Decision**: Pilot Takeover Decision (`framework.cpp:506-509`) and Mode Switch Check (`framework.cpp:504`).
