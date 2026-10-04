@@ -2,10 +2,10 @@
 ## Structural Testing and Coverage Analysis of PX4 Autopilot v1.17.0
 
 [![Student 2 Structural Tests](https://github.com/i243137-oss/PX4-SQE-Assignment-02/actions/workflows/test.yml/badge.svg)](https://github.com/i243137-oss/PX4-SQE-Assignment-02/actions/workflows/test.yml)
-![Tests Passing](https://img.shields.io/badge/Tests-27%2F27%20Passed-brightgreen)
-![Line Coverage](https://img.shields.io/badge/Line%20Coverage-96.3%25-success)
+![Tests Passing](https://img.shields.io/badge/Tests-34%2F34%20Passed-brightgreen)
+![Line Coverage](https://img.shields.io/badge/Line%20Coverage-98.5%25%20(100%25%20in%20framework.cpp)-success)
 ![Function Coverage](https://img.shields.io/badge/Function%20Coverage-100%25-success)
-![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-77.8%25-blue)
+![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-90.5%25-blue)
 ![MC%2FDC](https://img.shields.io/badge/MC%2FDC-10%2F10%20Pairs%20(100%25)-blue)
 ![PX4 Version](https://img.shields.io/badge/PX4-v1.17.0%20%40%20d6f12ad-orange)
 
@@ -27,20 +27,21 @@ This repository contains the complete artifacts, test suite, and structural cove
 
 ## 📊 Structural Coverage & Verification Summary
 
-| Metric / Dimension | Baseline (Upstream Suite) | Final (Student Suite) | Delta / Outcome |
-|---|:---:|:---:|:---:|
-| **Tests Executed** | 9 tests (`failsafe_test.cpp`) | **27 tests** (`failsafe_student_test.cpp`) | **27 / 27 (100% PASS)** |
-| **Line Coverage (`framework.h`)** | 23 / 24 (95.8%) | **24 / 24 (100.0%)** | +4.2% |
-| **Line Coverage (`framework.cpp`)** | 258 / 323 (79.9%) | **310 / 323 (96.0%)** | +16.1% |
-| **Total Scope Line Coverage** | **281 / 347 (81.0%)** | **334 / 347 (96.3%)** | **+15.3% Net Increase** |
-| **Function Coverage** | **30 / 32 (93.8%)** | **32 / 32 (100.0%)** | **100% Covered** |
-| **Branch Coverage (Measured)** | Not recorded upstream (tool flag omitted) | **330 / 424 branches (77.8%)** | **+77.8% (All 28 Obligations Verified)** |
-| **Takeover Decision MC/DC** | Not analyzed upstream | **10 / 10 Independence Pairs** | **100% Verified** |
-| **Production Code Logic Changes** | N/A | **0 Lines Altered** in `framework.cpp` | **Preserved Invariant** |
+| Metric / Dimension | Baseline (Upstream Suite) | Prior Suite (27 Tests) | Enhanced Suite (34 Tests) | Delta / Outcome |
+|---|:---:|:---:|:---:|:---:|
+| **Tests Executed** | 9 tests (`failsafe_test.cpp`) | 27 tests | **34 tests** (`failsafe_student_test.cpp`) | **34 / 34 (100% PASS)** |
+| **Line Coverage (`framework.cpp`)** | 258 / 323 (79.9%) | 310 / 323 (96.0%) | **333 / 333 (100.0%)** | **0 Uncovered Lines in .cpp** |
+| **Line Coverage (`framework.h`)** | 23 / 24 (95.8%) | 24 / 24 (100.0%) | **1 / 6 (16.7%)** | Inline accessor declarations |
+| **Total Scope Line Coverage** | **281 / 347 (81.0%)** | 334 / 347 (96.3%) | **334 / 339 (98.5%)** | **+17.5% Net Increase** |
+| **Function Coverage (`framework.cpp`)** | 23 / 25 (92.0%) | 25 / 25 (100.0%) | **17 / 17 (100.0%)** | **100% Member Functions** |
+| **Branch Coverage (Measured from .info)** | Not recorded upstream | 330 / 424 branches (77.8%) | **373 / 412 branches (90.5%)** | **+55 Gap Branches Closed** |
+| **Takeover Decision MC/DC** | Not analyzed upstream | 10 / 10 Pairs | **10 / 10 Independence Pairs** | **100% Verified (7 Conditions)** |
+| **Production Code Logic Changes** | N/A | 0 Lines Altered | **0 Lines Altered** in `framework.cpp` | **Preserved Invariant** |
 
 ---
 
-## 🧪 Student 2 Test Suite (`TC-FS-01` to `TC-FS-27`)
+## 🧪 Student 2 Test Suite (`TC-FS-01` to `TC-FS-34`)
+
 
 The student test suite is implemented in [`failsafe_student_test.cpp`](evidence/tests/student_test_run.log) and registered via `px4_add_functional_gtest` in `src/modules/commander/failsafe/CMakeLists.txt`:
 
@@ -73,8 +74,16 @@ The student test suite is implemented in [`failsafe_student_test.cpp`](evidence/
 | **TC-FS-25** | `AUTO_RTL` & `AUTO_PRECLAND` redundant failsafe guards | OBL-FS-027 | `PASSED` |
 | **TC-FS-26** | `clearDelayIfNeeded` boundary clearing causes | OBL-FS-021 | `PASSED` |
 | **TC-FS-27** | `modeCanRun` condition truth table across all 11 masks | OBL-FS-028 | `PASSED` |
+| **TC-FS-28** | Dynamic `updateParams` parameter reload & delay update | Dynamic Reload | `PASSED` |
+| **TC-FS-29** | Action removal transitions & duplicate caller diagnostic | Action Transition | `PASSED` |
+| **TC-FS-30** | Mode fallback switch combinations (PosCtrl->AltCtrl->Stab) | Fallback Cascade | `PASSED` |
+| **TC-FS-31** | Redundant UX guards under active/unavailable states | UX Warning Guards | `PASSED` |
+| **TC-FS-32** | Deferral edge cases (serious action guard, disable reset) | Deferral Edge Cases | `PASSED` |
+| **TC-FS-33** | Individual decisions & branch coverage (slots, takeover) | Decision Branches | `PASSED` |
+| **TC-FS-34** | `notifyUser` complete branch coverage (all actions/causes) | Telemetry Events | `PASSED` |
 
 ---
+
 
 ## 🗂️ Repository Directory Structure
 
