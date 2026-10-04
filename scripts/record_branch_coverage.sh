@@ -46,39 +46,50 @@ echo "======================================================================"
 "$BUILD_DIR/functional-failsafe_student_test"
 
 echo "======================================================================"
-echo "Step 6: Capturing Branch Coverage using lcov"
+echo "Step 6: Capturing Branch Coverage using lcov / gcov"
 echo "======================================================================"
-lcov --directory "$BUILD_DIR/src/modules/commander/failsafe" \
-     --capture \
-     --rc lcov_branch_coverage=1 \
-     --rc branch_coverage=1 \
-     --ignore-errors gcov \
-     -o "$OUT_DIR/raw_coverage.info"
+if command -v lcov &> /dev/null; then
+    lcov --directory "$BUILD_DIR/src/modules/commander/failsafe" \
+         --capture \
+         --rc lcov_branch_coverage=1 \
+         --rc branch_coverage=1 \
+         --ignore-errors gcov \
+         -o "$OUT_DIR/raw_coverage.info"
 
-echo "======================================================================"
-echo "Step 7: Filtering strictly to framework.h and framework.cpp"
-echo "======================================================================"
-lcov --extract "$OUT_DIR/raw_coverage.info" \
-     '*/src/modules/commander/failsafe/framework.*' \
-     --rc lcov_branch_coverage=1 \
-     --rc branch_coverage=1 \
-     -o "$OUT_DIR/failsafe_student_scope.info"
+    echo "======================================================================"
+    echo "Step 7: Filtering strictly to framework.h and framework.cpp"
+    echo "======================================================================"
+    lcov --extract "$OUT_DIR/raw_coverage.info" \
+         '*/src/modules/commander/failsafe/framework.*' \
+         --rc lcov_branch_coverage=1 \
+         --rc branch_coverage=1 \
+         -o "$OUT_DIR/failsafe_student_scope.info"
 
-cp "$OUT_DIR/failsafe_student_scope.info" "$OUT_DIR/failsafe_student_branch.info"
-rm -f "$OUT_DIR/raw_coverage.info"
+    cp "$OUT_DIR/failsafe_student_scope.info" "$OUT_DIR/failsafe_student_branch.info"
+    rm -f "$OUT_DIR/raw_coverage.info"
 
-echo "======================================================================"
-echo "Step 8: Branch and Statement Coverage Summary"
-echo "======================================================================"
-lcov --summary "$OUT_DIR/failsafe_student_scope.info" --rc lcov_branch_coverage=1 --rc branch_coverage=1
+    echo "======================================================================"
+    echo "Step 8: Branch and Statement Coverage Summary"
+    echo "======================================================================"
+    lcov --summary "$OUT_DIR/failsafe_student_scope.info" --rc lcov_branch_coverage=1 --rc branch_coverage=1
 
-echo "======================================================================"
-echo "Step 9: Generating HTML Visual Coverage Report"
-echo "======================================================================"
-genhtml "$OUT_DIR/failsafe_student_scope.info" \
-        --rc lcov_branch_coverage=1 \
-        --rc branch_coverage=1 \
-        --output-directory "$OUT_DIR/html"
+    echo "======================================================================"
+    echo "Step 9: Generating HTML Visual Coverage Report"
+    echo "======================================================================"
+    genhtml "$OUT_DIR/failsafe_student_scope.info" \
+            --rc lcov_branch_coverage=1 \
+            --rc branch_coverage=1 \
+            --output-directory "$OUT_DIR/html"
+else
+    echo "lcov binary not found in environment; utilizing native gcov and generator script..."
+    cd "$BUILD_DIR/src/modules/commander/failsafe/CMakeFiles/failsafe.dir"
+    gcov -b -c -m framework.cpp.gcda framework.h.gcda 2>&1 || true
+    python3 "$SCRIPT_DIR/scripts/generate_lcov_info.py"
+    cp "$OUT_DIR/failsafe_student_scope.info" "$OUT_DIR/failsafe_student_branch.info"
+    python3 "$SCRIPT_DIR/scripts/generate_html_report.py"
+fi
+
+
 
 echo "======================================================================"
 echo "✅ SUCCESS: Branch & Decision Coverage captured!"

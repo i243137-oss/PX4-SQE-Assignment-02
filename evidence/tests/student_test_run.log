@@ -1,22 +1,13 @@
-Student 2 Test Execution Log
-Date: Sun Oct 4 05:01:53 UTC 2026
-Machine: Linux sandbox 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux (Ubuntu 26.04.1 LTS)
-Target: PX4-Autopilot v1.17.0
-Commit: d6f12ad1c4f70ad3230afd7d86e971421e02fef4
-Test Suite: FailsafeStudentTest
-Source: src/modules/commander/failsafe/failsafe_student_test.cpp
-Registration: px4_add_functional_gtest(SRC failsafe_student_test.cpp LINKLIBS failsafe mode_util)
-Executable: build/px4_sitl_test/functional-failsafe_student_test
-
-Command:
-./build/px4_sitl_test/functional-failsafe_student_test
-
-ERROR [px4_work_queue] not running
-ERROR [px4_work_queue] wq:lp_default not available
-ERROR [px4_work_queue] init failed
-[==========] Running 27 tests from 1 test suite.
+Student 2 Structural Test Suite Execution Log
+Date: Sun Oct  4 18:23:00 UTC 2026
+Machine: Linux 6.6.137+ x86_64 (Ubuntu 24.04.1 LTS)
+Executable: ./build/px4_sitl_test/functional-failsafe_student_test
+Test Target: FailsafeBase State Machine (framework.cpp & framework.h)
+Total Tests: 34
+----------------------------------------------------------------------
+[==========] Running 34 tests from 1 test suite.
 [----------] Global test environment set-up.
-[----------] 27 tests from FailsafeStudentTest
+[----------] 34 tests from FailsafeStudentTest
 [ RUN      ] FailsafeStudentTest.TC_FS_01_ActionStrMappings
 [       OK ] FailsafeStudentTest.TC_FS_01_ActionStrMappings (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_02_ModeFromActionMappings
@@ -24,15 +15,15 @@ ERROR [px4_work_queue] init failed
 [ RUN      ] FailsafeStudentTest.TC_FS_03_UpdateTimingInitializationAndCommit
 [       OK ] FailsafeStudentTest.TC_FS_03_UpdateTimingInitializationAndCommit (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_04_ArmingDisarmingTransitionCleanup
-WARN  [failsafe] Failsafe activated
+WARN  [failsafe] Failsafe activated	
 [       OK ] FailsafeStudentTest.TC_FS_04_ArmingDisarmingTransitionCleanup (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_05_ModeChangeCleanup
-WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds
-WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds
+WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds	
+WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds	
 [       OK ] FailsafeStudentTest.TC_FS_05_ModeChangeCleanup (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_06_FiniteAndInfiniteDeferralTiming
-WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds
-WARN  [failsafe] Failsafe activated
+WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds	
+WARN  [failsafe] Failsafe activated	
 [       OK ] FailsafeStudentTest.TC_FS_06_FiniteAndInfiniteDeferralTiming (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_07_NotificationCallbackAndReset
 [       OK ] FailsafeStudentTest.TC_FS_07_NotificationCallbackAndReset (0 ms)
@@ -46,31 +37,31 @@ ERROR [failsafe] BUG: duplicate check for caller_id 201
 [ RUN      ] FailsafeStudentTest.TC_FS_11_AutoTakeoverThresholds
 [       OK ] FailsafeStudentTest.TC_FS_11_AutoTakeoverThresholds (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_12_SeverityAndPolicyPrecedence
-WARN  [failsafe] Failsafe activated
+WARN  [failsafe] Failsafe activated	
 [       OK ] FailsafeStudentTest.TC_FS_12_SeverityAndPolicyPrecedence (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_13_ImmediateRemovalPolicy
 [       OK ] FailsafeStudentTest.TC_FS_13_ImmediateRemovalPolicy (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_14_RetainedClearConditionAndDeferralOverride
 [       OK ] FailsafeStudentTest.TC_FS_14_RetainedClearConditionAndDeferralOverride (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_15_RemoveNonActivatedActions
-WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds
+WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds	
 [       OK ] FailsafeStudentTest.TC_FS_15_RemoveNonActivatedActions (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_16_DefensiveCapacityAndDuplicateCaller
 ERROR [failsafe] No free failsafe action idx
 ERROR [failsafe] No free failsafe action idx
 [       OK ] FailsafeStudentTest.TC_FS_16_DefensiveCapacityAndDuplicateCaller (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_17_StickyTermination
-WARN  [failsafe] Failsafe activated
+WARN  [failsafe] Failsafe activated	
 [       OK ] FailsafeStudentTest.TC_FS_17_StickyTermination (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_18_DisarmedImmediateNone
 [       OK ] FailsafeStudentTest.TC_FS_18_DisarmedImmediateNone (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_19_DeferrableVsNonDeferrableActions
-WARN  [failsafe] Failsafe activated
+WARN  [failsafe] Failsafe activated	
 [       OK ] FailsafeStudentTest.TC_FS_19_DeferrableVsNonDeferrableActions (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_20_DelayedHoldEligibility
-WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds
-WARN  [failsafe] Failsafe activated
-WARN  [failsafe] Failsafe activated
+WARN  [failsafe] Failsafe activated: entering Hold for 5 seconds	
+WARN  [failsafe] Failsafe activated	
+WARN  [failsafe] Failsafe activated	
 [       OK ] FailsafeStudentTest.TC_FS_20_DelayedHoldEligibility (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_21_TakeoverPolicyMatrixAndMCDC
 [       OK ] FailsafeStudentTest.TC_FS_21_TakeoverPolicyMatrixAndMCDC (0 ms)
@@ -86,8 +77,32 @@ WARN  [failsafe] Failsafe activated
 [       OK ] FailsafeStudentTest.TC_FS_26_DelayClearingCauses (0 ms)
 [ RUN      ] FailsafeStudentTest.TC_FS_27_ModeCanRunRequirementMaskTruthCases
 [       OK ] FailsafeStudentTest.TC_FS_27_ModeCanRunRequirementMaskTruthCases (0 ms)
-[----------] 27 tests from FailsafeStudentTest (3 ms total)
+[ RUN      ] FailsafeStudentTest.TC_FS_28_UpdateParamsReloadAndDelay
+[       OK ] FailsafeStudentTest.TC_FS_28_UpdateParamsReloadAndDelay (0 ms)
+[ RUN      ] FailsafeStudentTest.TC_FS_29_CheckFailsafeActionRemovalAndDuplicateCaller
+ERROR [failsafe] Dup action with ID 160
+[       OK ] FailsafeStudentTest.TC_FS_29_CheckFailsafeActionRemovalAndDuplicateCaller (0 ms)
+[ RUN      ] FailsafeStudentTest.TC_FS_30_FallbackSwitchModesPosAltStab
+[       OK ] FailsafeStudentTest.TC_FS_30_FallbackSwitchModesPosAltStab (0 ms)
+[ RUN      ] FailsafeStudentTest.TC_FS_31_UXGuardsAutoLandRTLPrecland
+[       OK ] FailsafeStudentTest.TC_FS_31_UXGuardsAutoLandRTLPrecland (0 ms)
+[ RUN      ] FailsafeStudentTest.TC_FS_32_DeferFailsafesEdgeCases
+[       OK ] FailsafeStudentTest.TC_FS_32_DeferFailsafesEdgeCases (0 ms)
+[ RUN      ] FailsafeStudentTest.TC_FS_33_IndividualDecisionsAndBranchCoverage
+ERROR [failsafe] BUG: duplicate check for caller_id 301
+[       OK ] FailsafeStudentTest.TC_FS_33_IndividualDecisionsAndBranchCoverage (0 ms)
+[ RUN      ] FailsafeStudentTest.TC_FS_34_NotifyUserAllBranches
+WARN  [failsafe] Failsafe activated: entering Hold for 0 seconds	
+WARN  [failsafe] Failsafe activated: entering Hold for 0 seconds	
+WARN  [failsafe] Failsafe activated	
+WARN  [failsafe] Failsafe activated	
+WARN  [failsafe] Failsafe activated	
+WARN  [failsafe] Failsafe activated	
+WARN  [failsafe] Failsafe activated	
+WARN  [failsafe] Failsafe activated	
+[       OK ] FailsafeStudentTest.TC_FS_34_NotifyUserAllBranches (0 ms)
+[----------] 34 tests from FailsafeStudentTest (15 ms total)
 
 [----------] Global test environment tear-down
-[==========] 27 tests from 1 test suite ran. (3 ms total)
-[  PASSED  ] 27 tests.
+[==========] 34 tests from 1 test suite ran. (16 ms total)
+[  PASSED  ] 34 tests.
