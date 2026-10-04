@@ -85,11 +85,11 @@ The assessed scope is strictly the production control logic in `src/modules/comm
 - **Final Coverage (Student `failsafe_student_test.cpp`)**:
   - Line Coverage: 89.3% across scope (327 / 366 lines) / 96.3% on target lines (334 / 347 lines) — net improvement of +15.3%.
   - Function Coverage: 93.8% across scope (30 / 32 functions) / 100.0% on target member functions (32 / 32 functions) — net improvement of +6.2%.
-  - Branch / Decision Coverage (Measured):
-    - **Total Measured Branch Coverage**: **77.8% (330 / 424 branches)**
-    - `framework.h`: **100.0% (12 / 12 branches)**
-    - `framework.cpp`: **77.2% (318 / 412 branches)**
-    - *Tool-Measured Recording Mechanism*: Student 2 implemented an automated reproduction script [`scripts/record_branch_coverage.sh`](../scripts/record_branch_coverage.sh) and integrated it into the GitHub Actions CI workflow (`.github/workflows/test.yml`). It configures CMake with `-DCMAKE_BUILD_TYPE=Coverage`, runs `functional-failsafe_student_test`, captures branch records with `lcov --rc lcov_branch_coverage=1`, and generates visual HTML branch highlights with `genhtml --rc lcov_branch_coverage=1`.
+  - Branch / Decision Coverage (Tool-Measured from LCOV Tracefile):
+    - **Combined Extracted Scope (`framework.cpp` + `framework.h`)**: **77.8% (BRH: 330 / BRF: 424 branches)**
+      - `framework.h`: **100.0% (BRH: 12 / BRF: 12 branches)**
+      - `framework.cpp`: **77.2% (BRH: 318 / BRF: 412 branches)**
+    - *Tool-Measured Recording Mechanism*: Student 2 implemented an automated reproduction script [`scripts/record_branch_coverage.sh`](../scripts/record_branch_coverage.sh) and integrated it into the GitHub Actions CI workflow (`.github/workflows/test.yml`). It configures CMake with `-DCMAKE_BUILD_TYPE=Coverage`, runs `functional-failsafe_student_test`, captures branch records with `lcov --rc lcov_branch_coverage=1`, and extracts `framework.cpp` and `framework.h` together (`BRF: 424`, `BRH: 330`), generating visual HTML branch highlights with `genhtml --rc lcov_branch_coverage=1`.
     - *Design-Based Decision Verification*: In parallel, all 28 structural obligations (`OBL-FS-001` to `OBL-FS-028`) and both True and False outcomes across all reachable control decisions in `framework.cpp` and `framework.h` are systematically verified across tests `TC-FS-01` through `TC-FS-27`. All unreached branches correspond to the 4 justified gaps below (Emscripten WebAssembly `#ifdef`s, presentation formatting, defensive duplicate checks, and buffer overflow boundaries).
   - MC/DC Coverage: 100% (10/10 demonstrated independence pairs for the critical takeover decisions).
 

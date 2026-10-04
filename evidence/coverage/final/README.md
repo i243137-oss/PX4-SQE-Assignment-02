@@ -25,14 +25,18 @@
 - **Final (Student Suite)**: 32 / 32 functions (100.0%)
 - **Delta**: +6.2% net increase (100% of member functions in the evaluated scope exercised).
 
-### C. Branch / Decision Coverage (Tool-Measured)
+### C. Branch / Decision Coverage (Tool-Measured from LCOV Tracefile)
 - **Baseline (Upstream Suite)**: Not recorded (PX4 upstream Makefile omitted `--rc branch_coverage=1`, yielding 0 `BRDA` records).
 - **Final (Student Suite)**: **330 / 424 branches (77.8%)**
-- **Scope Breakdown**:
-  - `framework.h`: **12 / 12 branches (100.0%)**
-  - `framework.cpp`: **318 / 412 branches (77.2%)**
+- **Combined Extracted Scope (`framework.cpp` + `framework.h` extracted together)**:
+  - Total Branches Found (BRF): **424 branches**
+  - Total Branches Hit (BRH): **330 branches**
+  - Combined Branch Coverage Rate: **77.8%**
+- **Per-File Scope Breakdown**:
+  - `framework.h`: **12 / 12 branches (100.0%)** (BRF: 12, BRH: 12)
+  - `framework.cpp`: **318 / 412 branches (77.2%)** (BRF: 412, BRH: 318)
 - **Tool-Measured Recording Mechanism**:
-  Student 2 created the standalone recording script [`scripts/record_branch_coverage.sh`](../../../scripts/record_branch_coverage.sh) which builds PX4 with `-DCMAKE_BUILD_TYPE=Coverage`, executes the 27 student tests, captures branch records with `lcov --rc lcov_branch_coverage=1`, filters to `framework.*`, and produces `failsafe_student_scope.info` and visual HTML branch reports.
+  Student 2 created the standalone recording script [`scripts/record_branch_coverage.sh`](../../../scripts/record_branch_coverage.sh) which builds PX4 with `-DCMAKE_BUILD_TYPE=Coverage`, executes the 27 student tests, captures branch records with `lcov --rc lcov_branch_coverage=1`, filters to `framework.*` (extracting `framework.cpp` and `framework.h` together), and produces `failsafe_student_scope.info` and visual HTML branch reports.
 - **Automated CI Capture**:
   The GitHub Actions CI workflow (`.github/workflows/test.yml`) executes this script automatically and packages the complete interactive visual HTML report as a downloadable artifact:
   `failsafe-branch-coverage-html-report`.
