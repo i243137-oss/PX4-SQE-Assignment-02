@@ -130,15 +130,16 @@ Every remaining gap in `framework.cpp` was investigated and verified against pro
    - *Reason Uncovered*: Defensive error log. During normal execution, caller IDs are unique per check site. Triggering duplicate actions requires violating internal class invariant contracts during an invalid-to-valid transition.
    - *Reachability*: Unreachable under normal production calling semantics.
 
-3. **Gap 3: `notifyUser` Event Formatting & MAVLink Presentation (lines 185-298)**:
+3. **`notifyUser` Event Telemetry Dispatch (lines 185-298)**:
    - *Source Location*: `framework.cpp:185-298`
-   - *Reason Uncovered*: Event dispatch (`events::send<...>`) and MAVLink log messages (`mavlink_log_critical`) represent user-facing telemetry formatting and presentation. The functional state machine triggers these via `_notification_required` and action worsening, which is verified via callback observation (`TC-FS-07`), but deep event text generation branches are presentation-layer code excluded from core flight control assessment.
-   - *Reachability*: Presentation layer logic separated from flight control state machine.
+   - *Coverage Status*: **Fully Tested in `TC_FS_34_NotifyUserAllBranches`**. All action classifications, delayed hold dispatches, and specific causes (battery warning/critical/emergency, link loss, manual control loss) are verified via the notification callback.
+   - *Residual Unreached Branches*: The only unreached branches within this function are compiler-generated exception unwinding landing pads (`throw`) around uORB copy macros and the `#ifdef EMSCRIPTEN_BUILD` preprocessor directive.
 
-4. **Gap 4: Subclass Hook Default Implementation & Capacity Overflow Drop (lines 99-100, 339-342)**:
+4. **Subclass Hook Default Implementation & Defensive Capacity Overflow (lines 99-100, 339-342)**:
    - *Source Location*: `framework.cpp:99-100`, `framework.cpp:339-342`
-   - *Reason Uncovered*: Default implementation of `modifyUserIntendedMode` in `FailsafeBase` simply returns `user_intended_mode` unchanged (subclass overrides are vehicle-type specific). In capacity overflow (lines 339-342), when all 8 action slots are full, incoming actions of equal or lower severity are dropped with no side effects.
+   - *Reason Uncovered*: Default implementation of `modifyUserIntendedMode` in `FailsafeBase` simply returns `user_intended_mode` unchanged (subclass overrides are vehicle-type specific). In capacity overflow (lines 339-342), when all 8 action slots are full, incoming actions of equal or lower severity are dropped with no side effects (`free_idx == -1`).
    - *Reachability*: Subclass hook fallback and defensive static buffer boundary.
+
 
 ---
 
