@@ -1,9 +1,13 @@
 import re
 import os
 
-info_file = "/home/umair_hassan/PX4-SQE-Assignment-02/evidence/coverage/final/failsafe_student_scope.info"
-out_html_dir = "/home/umair_hassan/PX4-SQE-Assignment-02/evidence/coverage/final/html"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+repo_root = os.path.abspath(os.path.join(script_dir, ".."))
+
+info_file = os.path.join(repo_root, "evidence/coverage/final/failsafe_student_scope.info")
+out_html_dir = os.path.join(repo_root, "evidence/coverage/final/html")
 os.makedirs(out_html_dir, exist_ok=True)
+
 
 # Parse info file
 files = {}

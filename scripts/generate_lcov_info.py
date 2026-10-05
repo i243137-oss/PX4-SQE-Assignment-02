@@ -89,11 +89,18 @@ def write_info(out_path, files):
             out.write("end_of_record\n")
 
 if __name__ == '__main__':
-    gcov_dir = "/home/umair_hassan/PX4-SQE-Assignment-02/PX4-Autopilot/build/px4_sitl_test/src/modules/commander/failsafe/CMakeFiles/failsafe.dir"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.abspath(os.path.join(script_dir, ".."))
+    gcov_dir = os.path.join(repo_root, "PX4-Autopilot/build/px4_sitl_test/src/modules/commander/failsafe/CMakeFiles/failsafe.dir")
+    
+    framework_h = os.path.join(repo_root, "PX4-Autopilot/src/modules/commander/failsafe/framework.h")
+    framework_cpp = os.path.join(repo_root, "PX4-Autopilot/src/modules/commander/failsafe/framework.cpp")
+    
     files = [
-        (os.path.join(gcov_dir, "framework.h.gcov"), "/home/umair_hassan/PX4-SQE-Assignment-02/PX4-Autopilot/src/modules/commander/failsafe/framework.h"),
-        (os.path.join(gcov_dir, "framework.cpp.gcov"), "/home/umair_hassan/PX4-SQE-Assignment-02/PX4-Autopilot/src/modules/commander/failsafe/framework.cpp")
+        (os.path.join(gcov_dir, "framework.h.gcov"), framework_h),
+        (os.path.join(gcov_dir, "framework.cpp.gcov"), framework_cpp)
     ]
-    out_info = "/home/umair_hassan/PX4-SQE-Assignment-02/evidence/coverage/final/failsafe_student_scope.info"
+    out_info = os.path.join(repo_root, "evidence/coverage/final/failsafe_student_scope.info")
     write_info(out_info, files)
     print("Generated", out_info)
+
