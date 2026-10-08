@@ -120,28 +120,31 @@ The assessed scope is strictly the production control logic in `src/modules/comm
 - MC/DC compound decision branches: fully exercised both outcomes of decisions at line 504 and 506-509.
 
 ### 3. Investigation of Uncovered Lines and Coverage Gaps
-Every remaining gap in `framework.cpp` was investigated and verified against production source logic:
+Every remaining branch gap across `framework.cpp` was investigated and verified against production source logic and GCC's annotated branch profile (`framework.cpp.gcov`), resolving into three verified categories across 34 source lines (39 zero-hit branch legs):
 
-1. **Gap 1: `EMSCRIPTEN_BUILD` Compilation Branch (lines 181-183, 523-525)**:
-   - *Source Location*: `framework.cpp:181-183`, `framework.cpp:523-525`
-   - *Reason Uncovered*: Guarded by `#ifdef EMSCRIPTEN_BUILD` preprocessor directive. The native/functional test target compiles for native Linux x86_64, where this code is omitted by the preprocessor.
-   - *Reachability*: Unreachable in POSIX/Linux builds; only compiled when targeting WebAssembly via `em++`.
+1. **Category 1: Compiler-Generated Exception Unwinding Landing Pads (24 branches)**:
+   - *Source Locations*: Lines 48, 82, 84, 87, 89, 94, 100, 174, 199, 208, 215 (×2), 226, 236, 245, 254, 259, 264, 268, 276, 286, 294 (×2), 524.
+   - *Nature*: Annotated in GCC `gcov` output as `taken 0 (throw)`.
+   - *Reason Uncovered*: GCC inserts exception-handling cleanup landing pads for C++ objects with destructors, temporary copies, event templates, and standard logging macros (`mavlink_log_critical`). In PX4 real-time execution, exceptions are disabled or never thrown at runtime.
+   - *Reachability*: Compiler-synthesized dead branches with no corresponding source-level decision.
 
-2. **Gap 2: Defensive Duplicate Action Diagnostic (lines 382-385)**:
-   - *Source Location*: `framework.cpp:382-385`
-   - *Code*: `if (found) { PX4_ERR("Dup action with ID %i", caller_id); }`
-   - *Reason Uncovered*: Defensive error log. During normal execution, caller IDs are unique per check site. Triggering duplicate actions requires violating internal class invariant contracts during an invalid-to-valid transition.
-   - *Reachability*: Unreachable under normal production calling semantics.
+2. **Category 2: Defensive Static Boundaries & Short-Circuits (10 branches)**:
+   - *Source Locations*: Lines 376, 495, 508, 620, 629, 630, 639 (×2), 724 (×2).
+   - *Nature*: Static buffer boundary guards, duplicate caller checks, and compound boolean short-circuit evaluation legs.
+   - *Reason Uncovered*: These branches guard impossible state combinations under valid class contracts (e.g. redundant RTL conversion in Auto-Land at line 620, Auto-RTL at lines 629–630, Precland at line 639, and deferral disable guards at line 724).
+   - *Reachability*: Defensive programming safeguards ensuring static buffer and state safety.
 
-3. **`notifyUser` Event Telemetry Dispatch (lines 185-298)**:
-   - *Source Location*: `framework.cpp:185-298`
-   - *Coverage Status*: **Fully Tested in `TC_FS_34_NotifyUserAllBranches`**. All action classifications, delayed hold dispatches, and specific causes (battery warning/critical/emergency, link loss, manual control loss) are verified via the notification callback.
-   - *Residual Unreached Branches*: The only unreached branches within this function are compiler-generated exception unwinding landing pads (`throw`) around uORB copy macros and the `#ifdef EMSCRIPTEN_BUILD` preprocessor directive.
+3. **Category 3: Observable Logic Decision Edge Cases (5 branches)**:
+   - *Source Locations*: Lines 69, 93, 192, 538 (×2).
+   - *Nature*: Control logic edge cases and enum default jump handlers:
+     - *Line 69 (`BRDA:69,0,2,0`)*: `_user_takeover_active == true` branch in `update()` when `user_intended_mode_updated == false` (sustained takeover across consecutive identical-mode cycles).
+     - *Line 93 (`BRDA:93,0,4,0`)*: `_notification_required == true` branch when `action_state.action <= _selected_action` (equal-or-lower severity re-notification).
+     - *Line 192 (`BRDA:192,0,3,0`)*: False branch of `delayed_action != Action::None` in `notifyUser`. In `FailsafeBase`, `Action::Hold` is strictly a transitional wrapper for a delayed action and is never selected without a valid `delayed_action`.
+     - *Line 538 (`BRDA:538,0,2,0`)*: `case Action::Descend:` in fallback switch. Callers never directly inject `Descend` as an initial primary action; it is generated solely internally as a degraded fallback from failed Land or Stabilized modes.
+     - *Line 538 (`BRDA:538,0,10,0`)*: `default:` jump table case for scoped enum `Action` in `switch (selected_action)`, where all valid enumerators are explicitly handled.
+   - *Reachability*: Logic edge cases and enum default handlers reflecting invariant constraints or internal-only fallback mappings.
 
-4. **Subclass Hook Default Implementation & Defensive Capacity Overflow (lines 99-100, 339-342)**:
-   - *Source Location*: `framework.cpp:99-100`, `framework.cpp:339-342`
-   - *Reason Uncovered*: Default implementation of `modifyUserIntendedMode` in `FailsafeBase` simply returns `user_intended_mode` unchanged (subclass overrides are vehicle-type specific). In capacity overflow (lines 339-342), when all 8 action slots are full, incoming actions of equal or lower severity are dropped with no side effects (`free_idx == -1`).
-   - *Reachability*: Subclass hook fallback and defensive static buffer boundary.
+*(Note on Preprocessor Directives: Preprocessor blocks `#ifdef EMSCRIPTEN_BUILD` at lines 181–183 and 523–525 are stripped before compilation on native Linux x86_64, generating zero `BRDA` records in the native coverage tracefile).*
 
 
 ---

@@ -2,6 +2,7 @@
 ## Structural Testing and Coverage Analysis of PX4 Autopilot v1.17.0
 
 [![Student 2 Structural Tests](https://github.com/i243137-oss/PX4-SQE-Assignment-02/actions/workflows/test.yml/badge.svg)](https://github.com/i243137-oss/PX4-SQE-Assignment-02/actions/workflows/test.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/i243137-oss/px4-sqe-assignment-02/badge)](https://www.codefactor.io/repository/github/i243137-oss/px4-sqe-assignment-02)
 ![Tests Passing](https://img.shields.io/badge/Tests-34%2F34%20Passed-brightgreen)
 ![Line Coverage](https://img.shields.io/badge/Line%20Coverage-100%25%20(366%2F366)-success)
 ![Function Coverage](https://img.shields.io/badge/Function%20Coverage-100%25-success)
