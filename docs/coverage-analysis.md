@@ -37,32 +37,44 @@ Per course specifications, structural coverage must target **substantial, core P
 
 ## 3. Investigation of Remaining Coverage Gaps
 
-Through the expansion from 27 to 34 tests, previous gaps in `updateParams`, action clearing transitions, duplicate caller diagnostics, mode fallback cascades, and `notifyUser` event dispatching were **fully closed and tested**. 
+From the tool-measured LCOV tracefile (`evidence/coverage/final/failsafe_student_scope.info`), exactly **39 zero-hit branch legs** remain unexercised across 34 source lines in `framework.cpp` (373 of 412 branches hit = 90.5%; combined with `framework.h`'s 12/12 = 100%, the overall rate is 385 of 424 = 90.8%).
 
-The remaining 39 unreached branches in `framework.cpp` (373 of 412 hit) were individually investigated against the GCC compiler output and source logic:
+Every zero-hit branch record (`BRDA:line,0,idx,0`) was individually cross-referenced against GCC's annotated branch profile (`framework.cpp.gcov`) and production source logic. They break down into three distinct, technically verified categories:
 
-### Category 1: Compiler Exception Unwinding Branches (26 Branches)
-- **Source Location**: Lines 48, 82, 84, 87, 89, 94, 100, 174, 199, 208, 215, 226, 236, 245, 254, 259, 264, 268, 276, 286, 294, 524.
-- **Nature**: Identified in `gcov` output with `taken 0 (throw)`.
-- **Why Not Covered**: GCC's code generator automatically inserts exception handling landing pads for C++ objects with non-trivial destructors, temporary copies, and standard library logging calls. In PX4's real-time flight software (compiled with `-fno-exceptions` or where exceptions are never thrown at runtime), these synthesized unwinding paths can never be taken.
-- **Justification**: Compiler-synthesized dead branches with no corresponding source-level decision.
+### Category 1: Compiler-Generated Exception Unwinding Landing Pads (24 Branches)
+- **Source Locations**: Lines 48, 82, 84, 87, 89, 94, 100, 174, 199, 208, 215 (×2), 226, 236, 245, 254, 259, 264, 268, 276, 286, 294 (×2), 524.
+- **Tracefile & Gcov Records**: Each corresponds to a `taken 0 (throw)` branch in `gcov` output. For example:
+  - Line 48 (`ModuleParams` constructor): branch 6 `taken 0 (throw)`
+  - Lines 82, 84, 87, 89, 94, 100, 174: helper method and callback call sites emitting cleanup landing pads
+  - Lines 199, 208, 226, 236, 245, 254, 259, 264, 268, 276, 286, 524: `events::send` template instantiations inserting exception unwinding code
+  - Lines 215 (×2) & 294 (×2): `mavlink_log_critical` macro invocations inserting dual unwinding paths
+- **Why Not Covered**: GCC's C++ code generator automatically inserts exception handling landing pads for functions constructing/destructing objects or passing arguments to external calls. In PX4's real-time flight architecture (compiled with `-fno-exceptions` or where exceptions are never thrown at runtime), these synthesized unwinding paths can never be executed.
+- **Justification**: Compiler-synthesized unwinding artifacts with no corresponding source-level decision logic.
 
-### Category 2: Platform-Specific Preprocessor Directives (6 Branches)
-- **Source Location**: Lines 181–183, 523–525.
-- **Code**:
-  ```cpp
-  #ifdef EMSCRIPTEN_BUILD
-      (void)_mavlink_log_pub;
-  #else
-  ```
-- **Why Not Covered**: Preprocessor exclusion. The build environment compiles SITL tests using native GCC on Linux x86_64. The Emscripten WebAssembly branches are excluded before compilation.
-- **Justification**: Valid platform-specific conditional compilation; physically non-existent in native POSIX binaries.
+### Category 2: Defensive Static Boundaries & Compound Short-Circuit Paths (10 Branches)
+- **Source Locations**: Lines 376, 495, 508, 620, 629, 630, 639 (×2), 724 (×2).
+- **Detailed Breakdown**:
+  - **Line 376 (`BRDA:376,0,3,0`)**: `} else if (last_state_failure && !cur_state_failure)` — evaluates `!cur_state_failure` when `last_state_failure` is true during an active failure transition.
+  - **Line 495 (`BRDA:495,0,5,0`)**: `if (_current_delay > 0 && !_user_takeover_active && allow_user_takeover <= UserTakeoverAllowed::AlwaysModeSwitchOnly && action_can_be_delayed)` — false leg of `action_can_be_delayed` when prior delay and takeover policy conditions are met.
+  - **Line 508 (`BRDA:508,0,5,0`)**: Takeover decision matrix — short-circuit false leg of `want_user_takeover_mode_switch` under `ModeSwitchOnly`.
+  - **Line 620 (`BRDA:620,0,0,0`)**: `AUTO_LAND` redundant RTL guard — false branch of `selected_action == Action::RTL` when entered during auto-land mode.
+  - **Line 629 (`BRDA:629,0,0,0`)**: `AUTO_RTL` redundant RTL guard — false branch of `selected_action == Action::RTL` when entered during auto-RTL mode.
+  - **Line 630 (`BRDA:630,0,3,0`)**: `AUTO_RTL` guard — false branch of `modeCanRun(AUTO_RTL)` during redundant check.
+  - **Line 639 (`BRDA:639,0,1,0`, `BRDA:639,0,2,0`)**: `AUTO_PRECLAND` guard — short-circuit paths of compound disjunction checking `selected_action == Land` and `delayed_action == RTL`.
+  - **Line 724 (`BRDA:724,0,3,0`, `BRDA:724,0,5,0`)**: `if (!enabled && _defer_failsafes && _failsafe_defer_started == 0)` — false legs of `_defer_failsafes` and `_failsafe_defer_started == 0` when deferral is disabled.
+- **Justification**: Defensive programming safeguards, static array bound protections, and compound short-circuit boolean legs under valid internal class invariants.
 
-### Category 3: Defensive Static Array Boundaries (7 Branches)
-- **Source Location**: Lines 339, 376, 495, 508, 620, 629, 639.
-- **Nature**: Boundary guards on the static action table (`_actions[MAX_ACTIONS]`), redundant guard fallthroughs, and compound decision short-circuits.
-- **Why Not Covered**: All reachable positive and negative states of the failsafe actions are tested. For example, when 8 action slots are saturated, actions of equal or lower severity are dropped with no side effects (`free_idx == -1`).
-- **Justification**: Defensive programming safeguards ensuring static buffer safety without exposing reachable alternative flight behavior.
+### Category 3: Observable Logic Decision Edge Cases (5 Branches)
+- **Source Locations**: Lines 69, 93, 192, 538 (×2).
+- **Detailed Breakdown**:
+  - **Line 69 (`BRDA:69,0,2,0`)**: `if (user_intended_mode_updated || _user_takeover_active)` in `update()` — the true outcome of `_user_takeover_active` when `user_intended_mode_updated` is false. In test execution, takeover requests were evaluated alongside mode updates; sustaining takeover across consecutive identical-mode cycles without an intended mode update exercises this specific path.
+  - **Line 93 (`BRDA:93,0,4,0`)**: `if (action_state.action > _selected_action || (action_state.action != Action::None && _notification_required))` — the true branch of `_notification_required` when `action_state.action <= _selected_action` and `action_state.action != Action::None`. Represents an equal-or-lower severity re-notification condition.
+  - **Line 192 (`BRDA:192,0,3,0`)**: `if (action == Action::Hold && delayed_action != Action::None)` in `notifyUser` — the false branch (`delayed_action == Action::None`). In `FailsafeBase`, `Action::Hold` is strictly a transitional wrapper for a subsequent delayed action (e.g., delayed Land or RTL). The framework never selects `Hold` without a target `delayed_action`.
+  - **Line 538 (`BRDA:538,0,2,0`)**: `switch (selected_action)` in `getSelectedAction` — `case Action::Descend:`. Callers never inject `Action::Descend` as an initial primary action; `Descend` is produced solely internally as a degraded fallback from failed Land or Stabilized modes.
+  - **Line 538 (`BRDA:538,0,10,0`)**: `switch (selected_action)` default jump table branch. Because `Action` is a scoped enum whose valid enumerators are completely handled in explicit switch cases, the compiler-emitted default branch is unexercised.
+- **Justification**: Plain control logic edge cases and enum default handlers that represent invariant constraints or internal-only fallback mappings.
+
+*(Note on Preprocessor Directives: Preprocessor blocks such as `#ifdef EMSCRIPTEN_BUILD` at lines 181–183 and 523–525 are stripped at preprocessor time prior to compilation on native Linux x86_64; they emit no code and generate zero `BRDA` records in the native coverage tracefile).*
 
 
 ### A. Root Cause of Missing Branch Data in Upstream Baseline
