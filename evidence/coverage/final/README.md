@@ -100,10 +100,10 @@ genhtml ../evidence/coverage/final/failsafe_student_branch.info \
 ---
 
 ## 4. Uncovered Scope Justifications
-All functional flight control decision logic across `framework.cpp` is 100% statement covered (333/333 lines) and 90.5% branch covered (373/412 branches). The only residual unreached branches correspond strictly to:
-1. **Gap 1**: `EMSCRIPTEN_BUILD` preprocessor blocks (lines 181-183, 523-525) - only compiled when targeting WebAssembly via `em++`.
-2. **Gap 2**: Defensive error log `PX4_ERR("Dup action with ID %i")` (lines 382-385) - unreachable under standard calling contracts.
-3. **Tested `notifyUser`**: Verified across all actions and causes in `TC_FS_34_NotifyUserAllBranches` (lines 185-298). Residual unreached paths are compiler-generated exception unwinding landing pads (`throw`).
-4. **Gap 4**: `modifyUserIntendedMode` default base return (lines 99-100) and capacity overflow drop branch (lines 339-342) - subclass hook for vehicle-specific adapters and defensive static buffer boundary.
+All functional flight control decision logic across the evaluated scope (`framework.cpp` + `framework.h`) is 100% statement covered (366/366 lines) and 90.8% branch covered (385/424 branches). The only residual unreached branches correspond strictly to:
+1. **Gap 1**: `EMSCRIPTEN_BUILD` preprocessor blocks (lines 181-183, 523-525 in `framework.cpp`) - only compiled when targeting WebAssembly via `em++`.
+2. **Gap 2**: Compiler-generated exception unwinding landing pads (`taken 0 (throw)`) around destructors and logging macros (26 branches in `framework.cpp`) - never executed at runtime.
+3. **Gap 3**: Defensive static boundary paths: capacity overflow drop, duplicate caller diagnostics, and compound short-circuit paths for unreachable state combinations (7 branches in `framework.cpp`).
+4. **Tested `notifyUser`**: Verified across all actions and causes in `TC_FS_34_NotifyUserAllBranches` (lines 185-298). Residual unreached paths are the compiler-generated exception unwinding landing pads listed in Gap 2 above.
 
 

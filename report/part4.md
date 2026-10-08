@@ -22,3 +22,4 @@ All 39 zero-hit branch legs across 34 source lines in `framework.cpp` were analy
 Achieving 100% statement coverage and 100% MC/DC on the pilot takeover logic provides strong confidence that `FailsafeBase` arbitrates flight failures deterministically according to design. Structural testing verified mode fallback cascades, timing thresholds, and user notification events without modifying production logic.
 
 However, branch coverage cannot expose multi-threaded uORB timing races or hardware actuator failures. MC/DC guarantees decision independence only under unit-level inputs. Residual risk remains concentrated at integration boundaries: subclass interactions, dynamic flight parameter updates, and sensor noise. Full system assurance requires complementary SITL mission and hardware-in-the-loop validation.
+

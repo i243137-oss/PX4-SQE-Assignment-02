@@ -43,6 +43,6 @@ Source baseline: `v1.17.0`, commit `d6f12ad1c4f70ad3230afd7d86e971421e02fef4`.
 
 ## Defensible exclusions
 
-- `OBL-FS-029`: `notifyUser` event-formatting branches are excluded from assessed control scope; callback invocation may be observed but event text is logging/presentation.
+- `OBL-FS-029`: `notifyUser` event-formatting branches are **fully exercised** in `TC-FS-34` (`TC_FS_34_NotifyUserAllBranches`). All action classifications, delayed hold dispatches, and cause-specific notifications are verified via the observable notification callback. Residual unreached branches within `notifyUser` are exclusively compiler-generated exception unwinding landing pads (`taken 0 (throw)`) — not observable source decisions.
 - `OBL-FS-030`: `EMSCRIPTEN_BUILD` notification compilation branch is not present in the normal functional-GTest target.
 - `OBL-FS-031`: no-free-slot replacement and duplicate caller diagnostics are defensive capacity/contract violations; retain as investigated gaps unless a non-production test subclass can reach them.

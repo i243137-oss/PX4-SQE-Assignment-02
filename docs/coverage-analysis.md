@@ -93,7 +93,7 @@ This script:
 - Generates an interactive visual HTML report under `evidence/coverage/final/html/index.html`.
 
 ### D. Decision & Branch Coverage Mapping
-Across all 28 structural obligations (`OBL-FS-001` through `OBL-FS-028`), both True and False outcomes of all reachable decisions in `framework.cpp` and `framework.h` are exercised by `TC-FS-01` through `TC-FS-27`:
+Across all 28 structural obligations (`OBL-FS-001` through `OBL-FS-028`), both True and False outcomes of all reachable decisions in `framework.cpp` and `framework.h` are exercised by `TC-FS-01` through `TC-FS-34`:
 - **Enum Branching (`framework.h:93-118`)**: All 11 enum cases and invalid defaults covered (`TC-FS-01`).
 - **Mode Mapping (`framework.cpp:672-697`)**: All 7 mode-producing actions and default non-mode fallthrough covered (`TC-FS-02`).
 - **Timing Initialization (`framework.cpp:38-41`)**: Both `_last_update == 0` and `_last_update != 0` branches covered (`TC-FS-03`).
@@ -102,6 +102,11 @@ Across all 28 structural obligations (`OBL-FS-001` through `OBL-FS-028`), both T
 - **Delay Dynamics (`framework.cpp:125-141`, `742-750`)**: Subtraction, zero clamping, slower regrowth (`dt/4`), and parameter capping covered (`TC-FS-08`, `TC-FS-09`).
 - **Slot Allocation & Replacement (`framework.cpp:313-345`)**: Existing slot update, empty slot allocation, and capacity severity replacement covered (`TC-FS-10`, `TC-FS-16`).
 - **Pilot Takeover Compound Decisions (`framework.cpp:504`, `506-509`)**: Complete 10/10 MC/DC independence pairs matrix covered (`TC-FS-21`).
-- **Mode Fallback Cascade (`framework.cpp:540-615`)**: Switch fallthrough across degraded sensor states covered (`TC-FS-23`).
-- **Redundant UX Guards (`framework.cpp:619-644`)**: `AUTO_LAND`, `AUTO_RTL`, and `AUTO_PRECLAND` suppression branches covered (`TC-FS-24`, `TC-FS-25`).
+- **Mode Fallback Cascade (`framework.cpp:540-615`)**: Switch fallthrough across degraded sensor states covered (`TC-FS-23`, `TC-FS-30`).
+- **Redundant UX Guards (`framework.cpp:619-644`)**: `AUTO_LAND`, `AUTO_RTL`, and `AUTO_PRECLAND` suppression branches covered (`TC-FS-24`, `TC-FS-25`, `TC-FS-31`).
 - **Mode Feasibility Bitmasks (`framework.cpp:708-718`)**: All 11 failure flags and requirement bitmasks systematically evaluated (`TC-FS-27`).
+- **`updateParams` Reload (`framework.cpp:143-147`)**: Dynamic parameter reload and delay reset covered (`TC-FS-28`).
+- **Action Removal & Duplicate Caller (`framework.cpp:376-388`)**: Both normal removal and duplicate ID diagnostic branches covered (`TC-FS-29`).
+- **`deferFailsafes` Edge Cases (`framework.cpp:721-729`)**: Serious action inhibition, disable reset, and default timeout handling covered (`TC-FS-32`).
+- **Individual Decision Branches (`framework.cpp:320, 401, 409, 426, 483, 495, 508`)**: Remaining single-path decisions covered (`TC-FS-33`).
+- **`notifyUser` Complete Dispatch (`framework.cpp:185-298`)**: All action types, delayed hold paths, and cause-specific notifications covered (`TC-FS-34`).
