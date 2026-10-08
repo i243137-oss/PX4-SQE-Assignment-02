@@ -49,7 +49,7 @@
   - `deferFailsafes`: Serious action inhibition, delay reset on disable, and default timeout handling covered (`framework.cpp:721–729`).
   - Individual decisions: Branches at lines 320, 401, 409, 426, 483, 495, 508 covered.
   - `notifyUser`: All action and cause branches exercised (`framework.cpp:185–298`).
-  - The remaining 39 unreached branch legs correspond strictly to compiler-generated exception unwinding branches (`throw`), `EMSCRIPTEN_BUILD` preprocessor guards, and defensive static bounds.
+  - The 39 unreached branch legs were investigated and classified as compiler-generated exception/unwinding paths, platform-specific `EMSCRIPTEN_BUILD` paths, and defensive/static boundary or short-circuit paths that are not exercised by the normal native functional-test configuration.
 
 
 ### D. Modified Condition / Decision Coverage (MC/DC)
