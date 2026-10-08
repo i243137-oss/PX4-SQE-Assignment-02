@@ -11,7 +11,7 @@ on:
 
 jobs:
   failsafe-tests:
-    name: Execute Student Tests (TC-FS-01 to TC-FS-27)
+    name: Execute Student Tests (TC-FS-01 to TC-FS-34)
     runs-on: ubuntu-24.04
 
     steps:
@@ -69,24 +69,19 @@ jobs:
           export PATH="$PWD/scripts/bin:$PATH"
           INFO_FILE="evidence/coverage/final/failsafe_student_scope.info"
           
-          if [ -f "$INFO_FILE" ]; then
-            LINES_METRIC=$(lcov --summary "$INFO_FILE" --rc lcov_branch_coverage=1 --rc branch_coverage=1 2>/dev/null | grep -E "lines\.*:" | sed 's/.*lines\.*: //')
-            FUNCS_METRIC=$(lcov --summary "$INFO_FILE" --rc lcov_branch_coverage=1 --rc branch_coverage=1 2>/dev/null | grep -E "functions\.*:" | sed 's/.*functions\.*: //')
-            BRANCH_METRIC=$(lcov --summary "$INFO_FILE" --rc lcov_branch_coverage=1 --rc branch_coverage=1 2>/dev/null | grep -E "branches\.*:" | sed 's/.*branches\.*: //')
-            TOTAL_BRF=$(grep -E "^BRF:" "$INFO_FILE" 2>/dev/null | cut -d: -f2 | awk '{s+=$1} END {print s}' || echo "412")
-            TOTAL_BRH=$(grep -E "^BRH:" "$INFO_FILE" 2>/dev/null | cut -d: -f2 | awk '{s+=$1} END {print s}' || echo "373")
-          else
-            LINES_METRIC="98.5% (334 of 339 lines)"
-            FUNCS_METRIC="100.0% (17 of 17 functions)"
-            BRANCH_METRIC="90.5% (373 of 412 branches)"
-            TOTAL_BRF="412"
-            TOTAL_BRH="373"
+          if [ ! -f "$INFO_FILE" ]; then
+            echo "Error: Coverage info file $INFO_FILE not found!" >&2
+            exit 1
           fi
+
+          LINES_METRIC=$(lcov --summary "$INFO_FILE" --rc lcov_branch_coverage=1 --rc branch_coverage=1 2>/dev/null | grep -E "lines\.*:" | sed 's/.*lines\.*: //')
+          FUNCS_METRIC=$(lcov --summary "$INFO_FILE" --rc lcov_branch_coverage=1 --rc branch_coverage=1 2>/dev/null | grep -E "functions\.*:" | sed 's/.*functions\.*: //')
+          BRANCH_METRIC=$(lcov --summary "$INFO_FILE" --rc lcov_branch_coverage=1 --rc branch_coverage=1 2>/dev/null | grep -E "branches\.*:" | sed 's/.*branches\.*: //')
+          TOTAL_BRF=$(grep -E "^BRF:" "$INFO_FILE" 2>/dev/null | cut -d: -f2 | awk '{s+=$1} END {print s}')
+          TOTAL_BRH=$(grep -E "^BRH:" "$INFO_FILE" 2>/dev/null | cut -d: -f2 | awk '{s+=$1} END {print s}')
           
-          CI_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
           CI_DATE=$(TZ='Asia/Karachi' date +"%Y-%m-%d %H:%M:%S PKT (UTC+05:00)")
           CI_MACHINE="$(uname -srm)"
-
 
           cat << EOF >> $GITHUB_STEP_SUMMARY
           ## 🚀 Student 2 Structural Test Execution Summary
@@ -100,7 +95,7 @@ jobs:
           | **Baseline Commit** | \`d6f12ad1c4f70ad3230afd7d86e971421e02fef4\` (\`v1.17.0\`) | 🔒 Verified |
           | **Test Suite** | \`FailsafeStudentTest\` (\`TC-FS-01\` to \`TC-FS-34\`) | ✅ Passed |
           | **Tests Executed** | **${PASSED_TESTS} / ${TOTAL_TESTS}** | **100% Passed** |
-          | **Measured Line Coverage** | **${LINES_METRIC}** *(Target: 98.5%)* | 📈 **Verified** |
+          | **Measured Line Coverage** | **${LINES_METRIC}** *(Target: 100.0%)* | 📈 **Verified** |
           | **Measured Function Coverage** | **${FUNCS_METRIC}** *(Target: 100.0%)* | 📈 **Verified** |
           | **Measured Branch Coverage** | **${BRANCH_METRIC}** (BRH: ${TOTAL_BRH} / BRF: ${TOTAL_BRF} branches) | 📈 **Verified** |
           | **MC/DC Independence Pairs** | **10 / 10 Pairs** for Takeover Decision | ✅ **100%** |
@@ -118,8 +113,6 @@ jobs:
           - **TC-FS-22 to TC-FS-25**: Mode fallback cascade, redundant UX guards
           - **TC-FS-26 to TC-FS-27**: Delay clearing conditions, mode requirement bitmasks
           - **TC-FS-28 to TC-FS-34**: Parameter updates, action removal, fallback cascade combinations, UX guards, deferral edge cases, decision branches, notifyUser coverage
-
-          - **TC-FS-26 to TC-FS-27**: Delay clearing conditions, mode requirement bitmasks
 
           ---
 

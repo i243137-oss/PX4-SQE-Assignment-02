@@ -94,14 +94,17 @@ The assessed scope is strictly the production control logic in `src/modules/comm
   - Function Coverage: 93.8% (30 / 32 functions)
   - Branch Coverage: Baseline lcov capture did not record branch statistics (omitted `--rc branch_coverage=1`).
 - **Final Coverage (Enhanced Student Suite - 34 Tests)**:
-  - Line Coverage: **98.5% across evaluated scope (334 / 339 lines)**
+  - Line Coverage: **100.0% across evaluated scope (366 / 366 lines)**
     - `framework.cpp`: **100.0% (333 / 333 lines)** — 0 uncovered lines in the implementation file.
-    - `framework.h`: **16.7% (1 / 6 lines)** (inline accessor declarations).
-  - Function Coverage: **100.0% on target member functions in `framework.cpp` (17 / 17 functions)**.
+    - `framework.h`: **100.0% (33 / 33 lines)** — 0 uncovered lines in the header.
+  - Function Coverage: **100.0% across evaluated scope (32 / 32 functions)**:
+    - `framework.cpp`: **100.0% (17 / 17 functions)**
+    - `framework.h`: **100.0% (15 / 15 functions)**
   - Branch / Decision Coverage (Tool-Measured from LCOV Tracefile):
-    - **Combined Extracted Scope (`framework.cpp` + `framework.h`)**: **90.5% (BRH: 373 / BRF: 412 branches)**
+    - **Combined Extracted Scope (`framework.cpp` + `framework.h`)**: **90.8% (BRH: 385 / BRF: 424 branches)**
       - `framework.cpp`: **90.5% (BRH: 373 / BRF: 412 branches)** (Net increase from 330 to 373 branches hit).
-    - *Tool-Measured Recording Mechanism*: Automated reproduction script [`scripts/record_branch_coverage.sh`](../scripts/record_branch_coverage.sh) and the GitHub Actions CI workflow (`.github/workflows/test.yml`). It configures CMake with `-DCMAKE_BUILD_TYPE=Coverage`, runs `functional-failsafe_student_test`, captures branch records with `lcov --rc lcov_branch_coverage=1` (or native GCC `gcov`), and extracts `framework.cpp` and `framework.h` together (`BRF: 412`, `BRH: 373`), generating visual HTML reports.
+      - `framework.h`: **100.0% (BRH: 12 / BRF: 12 branches)**
+    - *Tool-Measured Recording Mechanism*: Automated reproduction script [`scripts/record_branch_coverage.sh`](../scripts/record_branch_coverage.sh) and the GitHub Actions CI workflow (`.github/workflows/test.yml`). It configures CMake with `-DCMAKE_BUILD_TYPE=Coverage`, runs `functional-failsafe_student_test`, captures branch records with `lcov --rc lcov_branch_coverage=1` (or native GCC `gcov`), and extracts `framework.cpp` and `framework.h` together (`BRF: 424`, `BRH: 385`), generating visual HTML reports.
     - *Design-Based Decision Verification*: In parallel, all structural control obligations and both True and False outcomes across all reachable control decisions in `framework.cpp` and `framework.h` are systematically verified across tests `TC-FS-01` through `TC-FS-34`. All remaining 39 unreached branches correspond to compiler-generated exception unwinding branches (`throw`), `EMSCRIPTEN_BUILD` preprocessor guards, and defensive static bounds.
   - MC/DC Coverage: 100% (10/10 demonstrated independence pairs for the critical takeover decisions).
 
@@ -144,5 +147,5 @@ Every remaining gap in `framework.cpp` was investigated and verified against pro
 ---
 
 ## Part 3 Summary
-Student 2 authored 34 deterministic functional tests adhering strictly to the assignment specifications and recent instructor guidance, registered the target cleanly in CMake without altering production logic (retaining zero modifications to `framework.cpp`, with only a minimal test-only friend declaration in `framework.h` to access private state invariants), achieved maximal defensible structural coverage (**100.0% line coverage in `framework.cpp` [333/333 lines]**, 98.5% combined lines [334/339], 100.0% member functions [17/17], **90.5% tool-measured branch coverage [373/412 branches]**, and 10/10 MC/DC pairs on the 7-condition compound takeover decision) of the `FailsafeBase` safety-critical control logic, and provided complete technical justifications with compiler and source evidence for all remaining unreached compiler-synthesized landing pads, preprocessor directives, and defensive buffer bounds.
+Student 2 authored 34 deterministic functional tests adhering strictly to the assignment specifications and recent instructor guidance, registered the target cleanly in CMake without altering production logic (retaining zero modifications to `framework.cpp`, with only a minimal test-only friend declaration in `framework.h` to access private state invariants), achieved maximal defensible structural coverage (**100.0% line coverage across evaluated scope [366/366 lines]**, 100.0% member and inline functions [32/32], **90.8% tool-measured branch coverage [385/424 branches]**, and 10/10 MC/DC pairs on the 7-condition compound takeover decision) of the `FailsafeBase` safety-critical control logic, and provided complete technical justifications with compiler and source evidence for all remaining unreached compiler-synthesized landing pads, preprocessor directives, and defensive buffer bounds.
 

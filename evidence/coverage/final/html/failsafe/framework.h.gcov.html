@@ -31,18 +31,18 @@
             <td class="headerValue">failsafe_student_scope.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntry">32</td>
             <td class="headerCovTableEntry">33</td>
-            <td class="headerCovTableEntryHi">97.0 %</td>
+            <td class="headerCovTableEntry">33</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-10-03 21:50:23</td>
+            <td class="headerValue">2026-10-08 15:48:10</td>
             <td></td>
             <td class="headerItem">Functions:</td>
-            <td class="headerCovTableEntry">14</td>
             <td class="headerCovTableEntry">15</td>
-            <td class="headerCovTableEntryHi">93.3 %</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
           </tr>
           <tr>
             <td></td>
@@ -237,7 +237,7 @@
 <a name="164"><span class="lineNum">     164 </span>                :            :          * @return true on success, false if failsafe already active</a>
 <a name="165"><span class="lineNum">     165 </span>                :            :          */</a>
 <a name="166"><span class="lineNum">     166 </span>                :            :         bool deferFailsafes(bool enabled, int timeout_s);</a>
-<a name="167"><span class="lineNum">     167 </span>                :<span class="lineCov">          4 :         bool getDeferFailsafes() const { return _defer_failsafes; }</span></a>
+<a name="167"><span class="lineNum">     167 </span>                :<span class="lineCov">          7 :         bool getDeferFailsafes() const { return _defer_failsafes; }</span></a>
 <a name="168"><span class="lineNum">     168 </span>                :<span class="lineCov">          3 :         bool failsafeDeferred() const { return _failsafe_defer_started != 0; }</span></a>
 <a name="169"><span class="lineNum">     169 </span>                :            : </a>
 <a name="170"><span class="lineNum">     170 </span>                :            :         using UserCallback = void(*)(void *);</a>
@@ -245,11 +245,11 @@
 <a name="172"><span class="lineNum">     172 </span>                :            :         /**</a>
 <a name="173"><span class="lineNum">     173 </span>                :            :          * Register a callback that is called before notifying the user.</a>
 <a name="174"><span class="lineNum">     174 </span>                :            :          */</a>
-<a name="175"><span class="lineNum">     175 </span>                :<span class="lineCov">          1 :         void setOnNotifyUserCallback(UserCallback callback, void *arg)</span></a>
+<a name="175"><span class="lineNum">     175 </span>                :<span class="lineCov">          3 :         void setOnNotifyUserCallback(UserCallback callback, void *arg)</span></a>
 <a name="176"><span class="lineNum">     176 </span>                :            :         {</a>
-<a name="177"><span class="lineNum">     177 </span>                :<span class="lineCov">          1 :                 _on_notify_user_cb = callback;</span></a>
-<a name="178"><span class="lineNum">     178 </span>                :<span class="lineCov">          1 :                 _on_notify_user_arg = arg;</span></a>
-<a name="179"><span class="lineNum">     179 </span>                :<span class="lineCov">          1 :         }</span></a>
+<a name="177"><span class="lineNum">     177 </span>                :<span class="lineCov">          3 :                 _on_notify_user_cb = callback;</span></a>
+<a name="178"><span class="lineNum">     178 </span>                :<span class="lineCov">          3 :                 _on_notify_user_arg = arg;</span></a>
+<a name="179"><span class="lineNum">     179 </span>                :<span class="lineCov">          3 :         }</span></a>
 <a name="180"><span class="lineNum">     180 </span>                :            : </a>
 <a name="181"><span class="lineNum">     181 </span>                :            : protected:</a>
 <a name="182"><span class="lineNum">     182 </span>                :            :         enum class UserTakeoverAllowed {</a>
@@ -260,14 +260,14 @@
 <a name="187"><span class="lineNum">     187 </span>                :            :         };</a>
 <a name="188"><span class="lineNum">     188 </span>                :            : </a>
 <a name="189"><span class="lineNum">     189 </span>                :            :         struct ActionOptions {</a>
-<a name="190"><span class="lineNum">     190 </span>                :<span class="lineCov">        408 :                 ActionOptions(Action action_ = Action::None) : action(action_) {}</span></a>
-<a name="191"><span class="lineNum">     191 </span>                :<span class="lineCov">         26 :                 ActionOptions &amp;allowUserTakeover(UserTakeoverAllowed allow = UserTakeoverAllowed::Auto) { allow_user_takeover = allow; return *this; }</span></a>
+<a name="190"><span class="lineNum">     190 </span>                :<span class="lineCov">        619 :                 ActionOptions(Action action_ = Action::None) : action(action_) {}</span></a>
+<a name="191"><span class="lineNum">     191 </span>                :<span class="lineCov">         41 :                 ActionOptions &amp;allowUserTakeover(UserTakeoverAllowed allow = UserTakeoverAllowed::Auto) { allow_user_takeover = allow; return *this; }</span></a>
 <a name="192"><span class="lineNum">     192 </span>                :<span class="lineCov">         23 :                 ActionOptions &amp;clearOn(ClearCondition clear_condition_) { clear_condition = clear_condition_; return *this; }</span></a>
 <a name="193"><span class="lineNum">     193 </span>                :<span class="lineCov">          4 :                 ActionOptions &amp;causedBy(Cause cause_) { cause = cause_; return *this; }</span></a>
-<a name="194"><span class="lineNum">     194 </span>                :<span class="lineCov">          1 :                 ActionOptions &amp;cannotBeDeferred() { can_be_deferred = false; return *this; }</span></a>
+<a name="194"><span class="lineNum">     194 </span>                :<span class="lineCov">          2 :                 ActionOptions &amp;cannotBeDeferred() { can_be_deferred = false; return *this; }</span></a>
 <a name="195"><span class="lineNum">     195 </span>                :            : </a>
-<a name="196"><span class="lineNum">     196 </span>                :<span class="lineCov">       1491 :                 bool valid() const { return id != -1; }</span></a>
-<a name="197"><span class="lineNum">     197 </span>                :<span class="lineCov">          7 :                 void setInvalid() { id = -1; }</span></a>
+<a name="196"><span class="lineNum">     196 </span>                :<span class="lineCov">       1839 :                 bool valid() const { return id != -1; }</span></a>
+<a name="197"><span class="lineNum">     197 </span>                :<span class="lineCov">         10 :                 void setInvalid() { id = -1; }</span></a>
 <a name="198"><span class="lineNum">     198 </span>                :            : </a>
 <a name="199"><span class="lineNum">     199 </span>                :            :                 Action action{Action::None};</a>
 <a name="200"><span class="lineNum">     200 </span>                :            :                 ClearCondition clear_condition{ClearCondition::WhenConditionClears};</a>
@@ -314,8 +314,8 @@
 <a name="241"><span class="lineNum">     241 </span>                :            :          * @param user_intended_mode current user intended mode</a>
 <a name="242"><span class="lineNum">     242 </span>                :            :          * @return uint8_t new user intended mode</a>
 <a name="243"><span class="lineNum">     243 </span>                :            :          */</a>
-<a name="244"><span class="lineNum">     244 </span>                :<span class="lineCov">         32 :         virtual uint8_t modifyUserIntendedMode(Action previous_action, Action current_action,</span></a>
-<a name="245"><span class="lineNum">     245 </span>                :<span class="lineCov">         32 :                                                uint8_t user_intended_mode) const { return user_intended_mode; }</span></a>
+<a name="244"><span class="lineNum">     244 </span>                :<span class="lineCov">         33 :         virtual uint8_t modifyUserIntendedMode(Action previous_action, Action current_action,</span></a>
+<a name="245"><span class="lineNum">     245 </span>                :<span class="lineCov">         33 :                                                uint8_t user_intended_mode) const { return user_intended_mode; }</span></a>
 <a name="246"><span class="lineNum">     246 </span>                :            : </a>
 <a name="247"><span class="lineNum">     247 </span>                :            :         void updateParams() override;</a>
 <a name="248"><span class="lineNum">     248 </span>                :            : </a>
@@ -367,7 +367,7 @@
 <a name="294"><span class="lineNum">     294 </span>                :            :         UserCallback _on_notify_user_cb{nullptr};</a>
 <a name="295"><span class="lineNum">     295 </span>                :            :         void *_on_notify_user_arg{nullptr};</a>
 <a name="296"><span class="lineNum">     296 </span>                :            : </a>
-<a name="297"><span class="lineNum">     297 </span>                :<span class="lineNoCov">          0 :         DEFINE_PARAMETERS_CUSTOM_PARENT(ModuleParams,</span></a>
+<a name="297"><span class="lineNum">     297 </span>                :<span class="lineCov">          3 :         DEFINE_PARAMETERS_CUSTOM_PARENT(ModuleParams,</span></a>
 <a name="298"><span class="lineNum">     298 </span>                :            :                                         (ParamFloat&lt;px4::params::COM_FAIL_ACT_T&gt;)         _param_com_fail_act_t</a>
 <a name="299"><span class="lineNum">     299 </span>                :            :                                        );</a>
 <a name="300"><span class="lineNum">     300 </span>                :            : </a>

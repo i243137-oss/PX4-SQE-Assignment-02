@@ -25,11 +25,12 @@ Per course specifications, structural coverage must target **substantial, core P
 | `framework.cpp` | Lines | 258 / 323 (79.9%) | 310 / 323 (96.0%) | **333 / 333 (100.0%)** | **0 Uncovered Lines in Implementation** |
 | `framework.cpp` | Functions | 23 / 25 (92.0%) | 25 / 25 (100.0%) | **17 / 17 (100.0%)** | 100% Function Coverage |
 | `framework.cpp` | Branches | Not recorded | 318 / 412 (77.2%) | **373 / 412 (90.5%)** | **+55 Gap Branches Closed** |
-| `framework.h` | Lines | 23 / 24 (95.8%) | 24 / 24 (100.0%) | **1 / 6 (16.7%)** | Inline accessor declarations |
-| `framework.h` | Functions | 7 / 7 (100.0%) | 7 / 7 (100.0%) | **1 / 5 (20.0%)** | Default virtual hook exercised |
-| `framework.h` | Branches | Not recorded | 12 / 12 (100.0%) | **N/A** | Enums & class definitions |
-| **Combined Scope** | **Lines** | **281 / 347 (81.0%)** | **334 / 347 (96.3%)** | **334 / 339 (98.5%)** | **+17.5% Net Increase** |
-| **Combined Scope** | **Branches** | Not recorded | **330 / 424 (77.8%)** | **373 / 412 (90.5%)** | **90.5% Tool-Measured Branch Rate** |
+| `framework.h` | Lines | 23 / 24 (95.8%) | 24 / 24 (100.0%) | **33 / 33 (100.0%)** | **0 Uncovered Lines in Header** |
+| `framework.h` | Functions | 7 / 7 (100.0%) | 7 / 7 (100.0%) | **15 / 15 (100.0%)** | 100% Inline Functions |
+| `framework.h` | Branches | Not recorded | 12 / 12 (100.0%) | **12 / 12 (100.0%)** | Enums & class definitions |
+| **Combined Scope** | **Lines** | **281 / 347 (81.0%)** | **334 / 347 (96.3%)** | **366 / 366 (100.0%)** | **+19.0% Net Increase (100%)** |
+| **Combined Scope** | **Functions** | **30 / 32 (93.8%)** | **32 / 32 (100.0%)** | **32 / 32 (100.0%)** | **100% Scope Functions** |
+| **Combined Scope** | **Branches** | Not recorded | **330 / 424 (77.8%)** | **385 / 424 (90.8%)** | **90.8% Tool-Measured Branch Rate** |
 | **Pilot Takeover MC/DC** | **Pairs** | Not Analyzed | 10 / 10 Pairs (100%) | **10 / 10 Pairs (100%)** | Non-trivial 7-condition compound decision |
 
 ---

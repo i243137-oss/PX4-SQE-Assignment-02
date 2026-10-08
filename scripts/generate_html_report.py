@@ -8,7 +8,6 @@ info_file = os.path.join(repo_root, "evidence/coverage/final/failsafe_student_sc
 out_html_dir = os.path.join(repo_root, "evidence/coverage/final/html")
 os.makedirs(out_html_dir, exist_ok=True)
 
-
 # Parse info file
 files = {}
 with open(info_file, 'r') as f:
@@ -24,12 +23,8 @@ for rec in records:
     fnf = int(re.search(r"FNF:(\d+)", rec).group(1)) if re.search(r"FNF:(\d+)", rec) else 0
     fnh = int(re.search(r"FNH:(\d+)", rec).group(1)) if re.search(r"FNH:(\d+)", rec) else 0
     
-    # line hits
-    da = {}
-    for m in re.finditer(r"DA:(\d+),(\d+)", rec):
-        da[int(m.group(1))] = int(m.group(2))
     files[sf] = {
-        'lf': lf, 'lh': lh, 'brf': brf, 'brh': brh, 'fnf': fnf, 'fnh': fnh, 'da': da
+        'lf': lf, 'lh': lh, 'brf': brf, 'brh': brh, 'fnf': fnf, 'fnh': fnh
     }
 
 total_lf = sum(v['lf'] for v in files.values())

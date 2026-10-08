@@ -15,24 +15,27 @@
 ### A. Line / Statement Coverage (Tool-Measured)
 - **Baseline (Upstream Suite)**: 281 / 347 lines (81.0%)
 - **Prior Student Suite (27 Tests)**: 334 / 347 lines (96.3%)
-- **Final Enhanced Student Suite (34 Tests)**: **334 / 339 lines (98.5%)**
+- **Final Enhanced Student Suite (34 Tests)**: **366 / 366 lines (100.0%)**
   - `framework.cpp`: **333 / 333 lines (100.0%)** (0 uncovered lines in implementation!)
-  - `framework.h`: **1 / 6 lines (16.7%)** (inline accessor declarations)
+  - `framework.h`: **33 / 33 lines (100.0%)** (0 uncovered lines in header!)
 
 ### B. Function Coverage (Tool-Measured)
 - **Baseline (Upstream Suite)**: 30 / 32 functions (93.8%)
-- **Final Enhanced Student Suite (34 Tests)**: **17 / 17 member functions in `framework.cpp` (100.0%)**
+- **Final Enhanced Student Suite (34 Tests)**: **32 / 32 functions (100.0%)**
+  - `framework.cpp`: **17 / 17 member functions (100.0%)**
+  - `framework.h`: **15 / 15 inline functions (100.0%)**
 
 ### C. Branch / Decision Coverage (Tool-Measured from LCOV Tracefile)
 - **Baseline (Upstream Suite)**: Not recorded (PX4 upstream Makefile omitted `--rc branch_coverage=1`, yielding 0 `BRDA` records).
 - **Prior Student Suite (27 Tests)**: 330 / 424 branches (77.8%)
-- **Final Enhanced Student Suite (34 Tests)**: **373 / 412 branches (90.5%)**
+- **Final Enhanced Student Suite (34 Tests)**: **385 / 424 branches (90.8%)**
 - **Combined Extracted Scope (`framework.cpp` + `framework.h` extracted together)**:
-  - Total Branches Found (BRF): **412 branches**
-  - Total Branches Hit (BRH): **373 branches**
-  - Combined Branch Coverage Rate: **90.5%**
+  - Total Branches Found (BRF): **424 branches**
+  - Total Branches Hit (BRH): **385 branches**
+  - Combined Branch Coverage Rate: **90.8%**
 - **Per-File Scope Breakdown**:
   - `framework.cpp`: **373 / 412 branches (90.5%)** (BRF: 412, BRH: 373)
+  - `framework.h`: **12 / 12 branches (100.0%)** (BRF: 12, BRH: 12)
 - **Tool-Measured Recording Mechanism**:
   The standalone recording script [`scripts/record_branch_coverage.sh`](../../../scripts/record_branch_coverage.sh) builds PX4 with `-DCMAKE_BUILD_TYPE=Coverage`, executes the 34 student tests, captures branch records with `lcov` (or native GCC `gcov`), filters to `framework.*` (extracting `framework.cpp` and `framework.h` together), and produces `failsafe_student_scope.info` and visual HTML branch reports.
 - **Automated CI Capture**:

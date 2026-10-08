@@ -3,9 +3,9 @@
 
 [![Student 2 Structural Tests](https://github.com/i243137-oss/PX4-SQE-Assignment-02/actions/workflows/test.yml/badge.svg)](https://github.com/i243137-oss/PX4-SQE-Assignment-02/actions/workflows/test.yml)
 ![Tests Passing](https://img.shields.io/badge/Tests-34%2F34%20Passed-brightgreen)
-![Line Coverage](https://img.shields.io/badge/Line%20Coverage-98.5%25%20(100%25%20in%20framework.cpp)-success)
+![Line Coverage](https://img.shields.io/badge/Line%20Coverage-100%25%20(366%2F366)-success)
 ![Function Coverage](https://img.shields.io/badge/Function%20Coverage-100%25-success)
-![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-90.5%25-blue)
+![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-90.8%25-blue)
 ![MC%2FDC](https://img.shields.io/badge/MC%2FDC-10%2F10%20Pairs%20(100%25)-blue)
 ![PX4 Version](https://img.shields.io/badge/PX4-v1.17.0%20%40%20d6f12ad-orange)
 
@@ -31,10 +31,12 @@ This repository contains the complete artifacts, test suite, and structural cove
 |---|:---:|:---:|:---:|:---:|
 | **Tests Executed** | 9 tests (`failsafe_test.cpp`) | 27 tests | **34 tests** (`failsafe_student_test.cpp`) | **34 / 34 (100% PASS)** |
 | **Line Coverage (`framework.cpp`)** | 258 / 323 (79.9%) | 310 / 323 (96.0%) | **333 / 333 (100.0%)** | **0 Uncovered Lines in .cpp** |
-| **Line Coverage (`framework.h`)** | 23 / 24 (95.8%) | 24 / 24 (100.0%) | **1 / 6 (16.7%)** | Inline accessor declarations |
-| **Total Scope Line Coverage** | **281 / 347 (81.0%)** | 334 / 347 (96.3%) | **334 / 339 (98.5%)** | **+17.5% Net Increase** |
+| **Line Coverage (`framework.h`)** | 23 / 24 (95.8%) | 24 / 24 (100.0%) | **33 / 33 (100.0%)** | **0 Uncovered Lines in .h** |
+| **Total Scope Line Coverage** | **281 / 347 (81.0%)** | 334 / 347 (96.3%) | **366 / 366 (100.0%)** | **+19.0% Net Increase (100%)** |
 | **Function Coverage (`framework.cpp`)** | 23 / 25 (92.0%) | 25 / 25 (100.0%) | **17 / 17 (100.0%)** | **100% Member Functions** |
-| **Branch Coverage (Measured from .info)** | Not recorded upstream | 330 / 424 branches (77.8%) | **373 / 412 branches (90.5%)** | **+55 Gap Branches Closed** |
+| **Function Coverage (`framework.h`)** | 7 / 7 (100.0%) | 7 / 7 (100.0%) | **15 / 15 (100.0%)** | **100% Inline Functions** |
+| **Total Scope Function Coverage** | **30 / 32 (93.8%)** | 32 / 32 (100.0%) | **32 / 32 (100.0%)** | **100% Functions Covered** |
+| **Branch Coverage (Measured from .info)** | Not recorded upstream | 330 / 424 branches (77.8%) | **385 / 424 branches (90.8%)** | **+55 Gap Branches Closed** |
 | **Takeover Decision MC/DC** | Not analyzed upstream | 10 / 10 Pairs | **10 / 10 Independence Pairs** | **100% Verified (7 Conditions)** |
 | **Production Code Logic Changes** | N/A | 0 Lines Altered | **0 Lines Altered** in `framework.cpp` | **Preserved Invariant** |
 
@@ -95,21 +97,22 @@ PX4-SQE-Assignment-02/
 ├── report/
 │   ├── part1.md                     # Part 1: Architecture, Scope, and Structural Obligations
 │   ├── part2.md                     # Part 2: Structural Test Design & MC/DC Analysis
-│   └── part3.md                     # Part 3: Implementation, Execution & Coverage Analysis
+│   ├── part3.md                     # Part 3: Implementation, Execution & Coverage Analysis
+│   └── part4.md                     # Part 4: Final Quality Judgment and Verification Assessment
 ├── analysis/
 │   └── obligations.md               # 28 Structural Obligations Derivation
 ├── design/
-│   └── test_designs.md              # Test Case Design Matrix (TC-FS-01 to TC-FS-27)
+│   └── test_designs.md              # Test Case Design Matrix (TC-FS-01 to TC-FS-34)
 ├── evidence/
 │   ├── baseline/                    # Baseline test evidence (147/147 passed)
 │   ├── baseline_coverage/           # Baseline lcov coverage artifacts (81.0% lines)
-│   ├── coverage/final/              # Final student coverage artifacts (96.3% lines)
+│   ├── coverage/final/              # Final student coverage artifacts (100% lines, 90.8% branches)
 │   └── tests/
-│       └── student_test_run.log     # Verified execution output (27/27 passed)
+│       └── student_test_run.log     # Verified execution output (34/34 passed)
 ├── patches/
 │   └── px4-v1.17.0-student-changes.patch  # Clean, self-contained student patch
 ├── docs/
-│   ├── coverage-analysis.md         # Detailed coverage gap investigation (Gaps 1-4)
+│   ├── coverage-analysis.md         # Detailed coverage gap investigation (Gaps 1-3)
 │   └── environment.md               # Student environment record & toolchain versions
 ├── workbook/
 │   └── testing-workbook.xlsx        # Excel tracking workbook with test results
@@ -146,7 +149,7 @@ git apply --check ../patches/px4-v1.17.0-student-changes.patch
 Every run of the [GitHub Actions CI Workflow](https://github.com/i243137-oss/PX4-SQE-Assignment-02/actions/workflows/test.yml) produces downloadable artifacts available at the bottom of the workflow run summary page:
 
 1. **`failsafe-student-test-evidence`**: Contains the live test execution log (`test_execution_ci.log`), the clean student patch (`px4-v1.17.0-student-changes.patch`), verified test log, Part 3 report, and coverage analysis.
-2. **`functional-failsafe_student_test-binary`**: The compiled Linux x86_64 GTest executable binary, which can be run standalone to verify all 27 tests pass.
+2. **`functional-failsafe_student_test-binary`**: The compiled Linux x86_64 GTest executable binary, which can be run standalone to verify all 34 tests pass.
 
 To download:
 1. Navigate to **Actions** $\rightarrow$ select the latest workflow run.
@@ -158,5 +161,5 @@ To download:
 ## 👥 Student Team Responsibilities
 
 - **Student 1 (i243164)**: Architecture analysis, scope selection, control flow analysis, and test design.
-- **Student 2 (i243137 - Umair Hassan)**: Test implementation (`failsafe_student_test.cpp`), CMake integration, execution verification (27/27 passing), structural coverage analysis, and Part 3 documentation.
+- **Student 2 (i243137 - Umair Hassan)**: Test implementation (`failsafe_student_test.cpp`), CMake integration, execution verification (34/34 passing), structural coverage analysis, and Part 3 documentation.
 - **Student 3 (i243088)**: Baseline environment verification, testing workbook packaging, and final deliverables.
