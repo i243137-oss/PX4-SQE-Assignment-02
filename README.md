@@ -87,7 +87,6 @@ The student test suite is implemented in [`failsafe_student_test.cpp`](evidence/
 
 ---
 
-
 ## 🗂️ Repository Directory Structure
 
 ```text
@@ -153,14 +152,14 @@ Every run of the [GitHub Actions CI Workflow](https://github.com/i243137-oss/PX4
 2. **`functional-failsafe_student_test-binary`**: The compiled Linux x86_64 GTest executable binary, which can be run standalone to verify all 34 tests pass.
 
 To download:
-1. Navigate to **Actions** $\rightarrow$ select the latest workflow run.
+1. Navigate to **Actions** → select the latest workflow run.
 2. Scroll to the **Artifacts** table at the bottom of the page.
-3. Click on any artifact to download its ZIP archive.
+3. Click on any artifact to download it.
 
 ---
 
 ## 👥 Student Team Responsibilities
 
-- **Student 1 (i243164)**: Architecture analysis, scope selection, control flow analysis, and test design.
-- **Student 2 (i243137 - Umair Hassan)**: Test implementation (`failsafe_student_test.cpp`), CMake integration, execution verification (34/34 passing), structural coverage analysis, and Part 3 documentation.
-- **Student 3 (i243088)**: Baseline environment verification, testing workbook packaging, and final deliverables.
+- **Student 1 (i243164) — Abdullah**: Architecture analysis, scope selection, control flow analysis, and test design.
+- **Student 2 (i243137 — Umair Hassan)**: Test implementation (`failsafe_student_test.cpp`), CMake integration, execution verification (34/34 passing), structural coverage analysis, and Part 3 documentation.
+- **Student 3 (i243088) — Muhammad Anas**: Baseline environment verification, testing workbook packaging, and final deliverables.
